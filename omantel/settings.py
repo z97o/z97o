@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 # -----------------------------
 SECRET_KEY = "django-insecure-CHANGE_THIS_TO_YOUR_SECRET_KEY"
-DEBUG = True  # ✅ Use True for development; switch to False in production
+DEBUG = False
 
 # Hosts allowed to access the app
 ALLOWED_HOSTS = ['.onrender.com']
