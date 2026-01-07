@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="page-title">Network Dashboard</h2>
+
+<!-- KPIs Section -->
+<div class="cards-grid">
+  <div class="card">
+    <h3>Total Regions</h3>
+    <p>{{ kpis.regions }}</p>
+  </div>
+  <div class="card">
+    <h3>Total Towers</h3>
+    <p>{{ kpis.towers }}</p>
+  </div>
+  <div class="card">
+    <h3>Total Complaints</h3>
+    <p>{{ kpis.complaints_total }}</p>
+  </div>
+  <div class="card">
+    <h3>Open Complaints</h3>
+    <p>{{ kpis.complaints_open }}</p>
+  </div>
+</div>
+
+<!-- ===== Tower Map (Leaflet + MarkerCluster, modern style) ===== -->
+<div style="background:#fff;border-radius:16px;padding:0;box-shadow:0 4px 12px rgba(0,0,0,.1);margin-bottom:20px;">
+  <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between;">
+    <div>
+      <h3 style="margin:0;font-size:18px;color:#000;">Tower Map</h3>
+      <div style="color:#666;font-size:14px;margin-top:4px;">Clustered markers • Basemap switcher • Status colors</div>
+    </div>
+    <a href="{% url 'dashboard:towers' %}" style="background:#9A7E55;color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;">View All Towers</a>
+  </div>
+  <div id="towerMap" style="height:520px;border-radius:0 0 16px 16px;"></div>
+</div>
+
+<!-- Complaints by Status Section -->
+<div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+  <h3 style="margin-top:0;">Complaints by Status</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:14px;">
+    <tr style="background:#f4f4f4;">
+      <th style="text-align:left;padding:8px;">Status</th>
+      <th style="text-align:left;padding:8px;">Count</th>
+    </tr>
+    {% for row in by_status %}
+    <tr>
+      <td style="padding:8px;">{{ row.status }}</td>
+      <td style="padding:8px;">{{ row.n }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<!-- Leaflet core -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+
+<!-- MarkerCluster plugin -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+/>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+/>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+(function () {
+  // === Base layers ===
+  const light = L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    { maxZoom: 20, attribution: '&copy; OpenStreetMap, &copy; CARTO' }
+  );
+  const dark = L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    { maxZoom: 20, attribution: '&copy; OpenStreetMap, &copy; CARTO' }
+  );
+  const satellite = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 18, attribution: '&copy; Esri' }
+  );
+
+  // === Initialize the map centered on Oman ===
+  const map = L.map('towerMap', {
+    center: [23.6, 58.4], // near Muscat
+    zoom: 7,
+    layers: [light]
+  });
+
+  // === Add basemap toggler ===
+  L.control.layers(
+    { 'Light': light, 'Dark': dark, 'Satellite': satellite },
+    null, { position: 'topleft' }
+  ).addTo(map);
+
+  // === Define marker color by signal ===
+  function colorForSignal(signal) {
+    switch ((signal || '').toLowerCase()) {
+      case 'good': return '#16A34A';      // green
+      case 'moderate': return '#D97706';  // orange
+      case 'poor': return '#C53030';      // red
+      case 'down': return '#6B7280';      // gray
+      default: return '#C53030';
+    }
+  }
+
+  // === Create a custom circle marker ===
+  function makeMarker(feature, latlng) {
+    const p = feature.properties;
+    return L.circleMarker(latlng, {
+      radius: 7,
+      fillColor: colorForSignal(p.signal),
+      color: '#fff',
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.9
+    }).bindPopup(`
+      <b>${p.name}</b><br>
+      Region: ${p.region || ''}<br>
+      Tech: ${p.technology || ''}<br>
+      Signal: ${p.signal || ''}<br>
+      Latency: ${p.latency ?? ''}<br>
+      Download: ${p.download ?? ''}
+    `);
+  }
+
+  // === Load tower data from backend ===
+  fetch("{% url 'dashboard:map_data' %}")
+    .then(r => r.json())
+    .then(geojson => {
+      const layer = L.geoJSON(geojson, { pointToLayer: makeMarker });
+      layer.addTo(map);
+      try {
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
+      } catch (e) { console.warn('No valid tower data', e); }
+    })
+    .catch(err => console.error('Map data load failed:', err));
+
+  // === Legend ===
+  const legend = L.control({ position: 'bottomleft' });
+  legend.onAdd = function () {
+    const div = L.DomUtil.create('div', 'map-legend');
+    div.style.cssText = 'background:white;padding:8px 10px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.15);font-size:13px;';
+    div.innerHTML =
+      '<div style="font-weight:700;margin-bottom:6px;">Signal</div>' +
+      '<div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#16A34A;margin-right:6px;"></span>Good</div>' +
+      '<div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#D97706;margin-right:6px;"></span>Moderate</div>' +
+      '<div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#C53030;margin-right:6px;"></span>Poor</div>' +
+      '<div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#6B7280;margin-right:6px;"></span>Down</div>';
+    return div;
+  };
+  legend.addTo(map);
+})();
+</script>
+
+{% endblock %}

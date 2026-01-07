@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ page_title|default:"Omantel" }} · Omantel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'omantel/css/main.css' %}">
+</head>
+<body>
+  <!-- Top header bar -->
+  <header class="header">
+    <a href="{% url 'dashboard:index' %}" class="brand">
+      <img src="{% static 'omantel/images/omantel_logo.png' %}" alt="Omantel Logo" class="logo">
+    </a>
+
+    <nav class="nav">
+      <a href="{% url 'dashboard:index' %}" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}">📊 Dashboard</a>
+      <a href="/regions/"   class="nav-link {% if request.path|slice:':9' == '/regions/' %}active{% endif %}">🌍 Regions</a>
+      <a href="/towers/"    class="nav-link {% if request.path|slice:':8' == '/towers/' %}active{% endif %}">🏗️ Towers</a>
+      <a href="/complaints/"class="nav-link {% if request.path|slice:':12' == '/complaints/' %}active{% endif %}">📋 Complaints</a>
+      <a href="/"           class="nav-link {% if request.path == '/' %}active{% endif %}">🏠 Home</a>
+    </nav>
+  </header>
+
+  <main class="content">
+    <h1 class="page-title">{{ page_title|default:"Dashboard" }}</h1>
+    {% block content %}{% endblock %}
+    <footer class="footer">© 2025 Omantel</footer>
+  </main>
+</body>
+</html>

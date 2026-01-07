@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Region Insights{% endblock %}
+
+{% block content %}
+<h1>Region Insights</h1>
+<p>Live KPIs per region from NetInsight dataset.</p>
+
+<div style="margin-top: 24px; display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <!-- Chart card -->
+    <div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+        <h2 style="margin-bottom:12px;">Total Users & Complaints by Region</h2>
+        <canvas id="regionChart"></canvas>
+    </div>
+
+    <!-- Info card -->
+    <div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+        <h2 style="margin-bottom:12px;">What you see here</h2>
+        <ul style="list-style:disc;padding-left:18px;">
+            <li>👥 <strong>Total Users</strong> = Residential + Business per region.</li>
+            <li>📦 <strong>Avg Data/User</strong> in GB per day.</li>
+            <li>📞 <strong>Complaints</strong> from the complaints sheet.</li>
+            <li>You can quickly see high-usage or high-complaint regions.</li>
+        </ul>
+    </div>
+</div>
+
+<br>
+
+<!-- KPI Table -->
+<div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+    <h2 style="margin-bottom:12px;">Region KPI Table</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <thead>
+            <tr>
+                <th style="border-bottom:1px solid #ddd;padding:8px;text-align:left;">Region</th>
+                <th style="border-bottom:1px solid #ddd;padding:8px;text-align:right;">Residential Users</th>
+                <th style="border-bottom:1px solid #ddd;padding:8px;text-align:right;">Business Users</th>
+                <th style="border-bottom:1px solid #ddd;padding:8px;text-align:right;">Total Users</th>
+                <th style="border-bottom:1px solid #ddd;padding:8px;text-align:right;">Avg Data/User (GB/day)</th>
+                <th style="border-bottom:1px solid #ddd;padding:8px;text-align:right;">Complaints</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td style="padding:8px;border-bottom:1px solid #eee;">{{ row.region }}</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">{{ row.res_users }}</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">{{ row.bus_users }}</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">{{ row.total_users }}</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">{{ row.avg_data }}</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">{{ row.complaints }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const regions    = {{ regions|safe }};
+    const totalUsers = {{ total_users|safe }};
+    const complaints = {{ complaints|safe }};
+    const avgData    = {{ avg_data|safe }};
+
+    const ctx = document.getElementById('regionChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: regions,
+            datasets: [
+                {
+                    label: 'Total Users',
+                    data: totalUsers,
+                    borderWidth: 1
+                },
+                {
+                    label: 'Complaints',
+                    data: complaints,
+                    type: 'line',
+                    borderWidth: 2,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Total Users' }
+                },
+                y1: {
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: { drawOnChartArea: false },
+                    title: { display: true, text: 'Complaints' }
+                }
+            },
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

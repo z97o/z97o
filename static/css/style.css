@@ -1,0 +1,93 @@
+/* ====== Base ====== */
+:root{
+  --bg:#0f1115;           /* خلفية داكنة */
+  --panel:#171a21;        /* بطاقات */
+  --panel-2:#1d2129;
+  --text:#e8ebf1;         /* نص فاتح */
+  --muted:#9aa3b2;
+  --brand:#9A7E55;        /* لون مميّز */
+  --line:#2a2f3a;
+  --btn:#1f2430;
+  --btn-active:#242a36;
+  --success:#21c997;
+  --warn:#f4c542;
+  --danger:#ff6b6b;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:"Playfair Display", serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* ====== Topbar / Nav ====== */
+.topbar{
+  background: #0c0e13;
+  border-bottom:1px solid var(--line);
+  position:sticky; top:0; z-index:10;
+}
+.nav{
+  display:flex; gap:.5rem; align-items:center;
+  padding:.75rem 1rem; max-width:1200px; margin:0 auto;
+}
+.nav .nav-btn{
+  background:var(--btn); color:var(--text);
+  padding:.55rem .9rem; border-radius:.6rem;
+  text-decoration:none; display:inline-flex; gap:.5rem; align-items:center;
+  border:1px solid #202634;
+  transition:transform .08s ease, background .2s ease;
+  font-weight:600; font-size:.95rem;
+}
+.nav .nav-btn:hover{ transform:translateY(-1px); background:var(--btn-active); }
+.nav .nav-btn.active{ outline:2px solid var(--brand); }
+.nav .right{ margin-left:auto; }
+
+/* ====== Layout ====== */
+.container{ max-width:1200px; margin:1.2rem auto 3rem; padding:0 1rem; }
+.page-title{ font-size:1.6rem; font-weight:700; margin:0 0 1rem; }
+
+/* ====== Cards ====== */
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:1rem;
+  box-shadow:0 6px 18px rgba(0,0,0,.25);
+}
+.card .card-title{ font-weight:700; margin-bottom:.8rem; }
+
+/* KPI cards */
+.grid-3{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:1rem;
+}
+.kpi{ background:var(--panel-2); }
+.kpi-title{ color:var(--muted); font-size:.95rem; }
+.kpi-value{
+  margin-top:.7rem; font-size:1.4rem; font-weight:700;
+  letter-spacing:.5px;
+}
+
+/* spacing */
+.mt{ margin-top:1rem; }
+
+/* ====== Tables ====== */
+.table-wrap{ overflow:auto; }
+.table{
+  width:100%; border-collapse:collapse; font-size:.95rem;
+}
+.table thead th{
+  text-align:left; padding:.75rem; color:var(--muted);
+  border-bottom:1px solid var(--line);
+  background: #141821;
+  position:sticky; top:0;
+}
+.table tbody td{
+  padding:.75rem; border-bottom:1px solid var(--line);
+}
+.table tbody tr:hover{ background:#151a23; }
+
+/* Icons alignment */
+.fa-solid{ width:18px; text-align:center; margin-right:.35rem; }

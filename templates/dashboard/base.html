@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omantel Dashboard</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="flex bg-gray-100 min-h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-[#9A7E55] text-white h-screen fixed p-4 shadow-lg">
+        <div class="flex items-center mb-6">
+            <img src="{% static 'omantel/images/omantel_logo.png' %}" alt="Omantel Logo" class="w-10 h-10 mr-3 rounded-full">
+            <h1 class="text-2xl font-bold tracking-wide">Omantel</h1>
+        </div>
+
+        <nav class="flex flex-col space-y-2 mt-4">
+            <a href="{% url 'dashboard:index' %}" class="block py-2 px-4 rounded hover:bg-[#b99b6f] transition duration-200">📊 Dashboard</a>
+            <a href="{% url 'regions:region_list' %}" class="block py-2 px-4 rounded hover:bg-[#b99b6f] transition duration-200">🌍 Regions</a>
+            <a href="{% url 'towers:tower_list' %}" class="block py-2 px-4 rounded hover:bg-[#b99b6f] transition duration-200">📡 Towers</a>
+        </nav>
+
+        <div class="mt-10 text-sm text-center text-gray-200">
+            <p>© 2025 Omantel</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 ml-64 p-6 transition-all">
+        <div class="bg-white p-6 rounded-2xl shadow-md min-h-[80vh]">
+            {% block content %}
+            <!-- Page-specific content goes here -->
+            {% endblock %}
+        </div>
+    </div>
+</body>
+</html>

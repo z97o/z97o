@@ -1,0 +1,148 @@
+/* ================================
+   GLASSMORPHISM BASE
+================================ */
+
+body {
+  background: linear-gradient(
+    135deg,
+    #f6f3ee 0%,
+    #ebe6dc 50%,
+    #f8f6f2 100%
+  );
+}
+
+/* Glass Card */
+.glass {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  transition: all .35s ease;
+}
+
+.glass:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 16px 40px rgba(0,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+/* ================================
+   HEADER (GLASS)
+================================ */
+
+header {
+  background: rgba(154, 126, 85, 0.75) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,0.25);
+}
+
+/* ================================
+   SIDEBAR (GLASS)
+================================ */
+
+.sidebar {
+  background: rgba(154, 126, 85, 0.82) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.sidebar a {
+  border-radius: 10px;
+  margin: 6px 12px;
+}
+
+.sidebar a:hover {
+  background: rgba(255,255,255,0.18);
+  transform: translateX(4px);
+}
+
+/* ================================
+   CONTENT CARDS
+================================ */
+
+.content h1,
+.content h2 {
+  letter-spacing: .4px;
+}
+
+.card,
+.kpi-card,
+.panel,
+.summary-card {
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.08);
+}
+
+/* KPI numbers */
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #6c5434;
+}
+
+/* ================================
+   BUTTONS
+================================ */
+
+button,
+.menu-btn,
+.theme-btn,
+.logout-btn {
+  border-radius: 14px !important;
+  transition: all .25s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+/* ================================
+   MAP CONTAINER
+================================ */
+
+#towerMap {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 18px 45px rgba(0,0,0,.15);
+}
+
+/* ================================
+   ALERT TOAST (GLASS)
+================================ */
+
+.toast {
+  background: rgba(255,255,255,0.7) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 18px;
+}
+
+/* ================================
+   DARK MODE (GLASS)
+================================ */
+
+body.dark-mode {
+  background: linear-gradient(
+    135deg,
+    #121212,
+    #1a1a1a,
+    #111
+  );
+}
+
+body.dark-mode .glass,
+body.dark-mode .card,
+body.dark-mode .kpi-card {
+  background: rgba(30,30,30,0.7);
+  border-color: rgba(255,255,255,0.08);
+}

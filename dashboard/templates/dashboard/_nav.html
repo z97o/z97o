@@ -1,0 +1,17 @@
+{% load static %}
+<style>
+  .topnav{position:sticky;top:0;z-index:999;display:flex;gap:10px;align-items:center;
+    padding:10px;background:#0d1117;border-bottom:1px solid #30363d;font-family:system-ui,Arial,sans-serif}
+  .topnav a{color:#e6edf3;text-decoration:none;border:1px solid #30363d;border-radius:10px;padding:6px 10px}
+  .topnav a:hover{background:#161b22}
+  .spacer{flex:1}
+</style>
+<div class="topnav">
+  <a href="{% url 'dashboard:index' %}">🏠 KPIs</a>
+  <a href="{% url 'dashboard:regions' %}">📊 Regions</a>
+  <a href="{% url 'dashboard:map' %}">🗺 Map</a>
+  <a href="{% url 'dashboard:engineer' %}">🛠 Engineer</a>
+  <a href="{% url 'dashboard:manager' %}">📈 Manager</a>
+  <div class="spacer"></div>
+  <a href="/admin/">⚙️ Admin</a>
+</div>

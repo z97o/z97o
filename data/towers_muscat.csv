@@ -1,0 +1,21 @@
+tower_id,name,region,lat,lng,rsrp_dbm,tech,vendor,status
+TWR-1001,Qurum,Muscat,23.6025,58.4639,-65,5G,VendorA,Active
+TWR-1002,Muttrah,Muscat,23.6156,58.5922,-78,5G,VendorA,Active
+TWR-1003,Ruwi,Muscat,23.5884,58.5463,-88,4G,VendorB,Active
+TWR-1004,Al Khuwair,Muscat,23.5924,58.4312,-72,5G,VendorA,Active
+TWR-1005,Azaiba,Muscat,23.6007,58.3847,-97,4G,VendorB,Maintenance
+TWR-1006,Seeb Center,Seeb,23.6697,58.1891,-58,5G,VendorA,Active
+TWR-1007,Al Amerat,Muscat,23.4705,58.5333,-110,4G,VendorC,Active
+TWR-1008,Ghubra,Muscat,23.6003,58.4086,-75,5G,VendorA,Active
+TWR-1009,Madinat Sultan Qaboos,Muscat,23.6009,58.4667,-82,5G,VendorA,Active
+TWR-1010,Airport Heights,Muscat,23.5936,58.2870,-69,5G,VendorA,Active
+TWR-1011,Wadi Adai,Muscat,23.5173,58.5169,-92,4G,VendorB,Active
+TWR-1012,Al Mouj,Seeb,23.6209,58.2954,-61,5G,VendorA,Active
+TWR-1013,Bausher,Muscat,23.5592,58.4275,-74,5G,VendorA,Active
+TWR-1014,Amerat Heights,Muscat,23.4885,58.5320,-103,4G,VendorC,Active
+TWR-1015,Ansab,Muscat,23.5406,58.3984,-86,5G,VendorA,Active
+TWR-1016,The Wave South,Seeb,23.6150,58.3059,-63,5G,VendorA,Active
+TWR-1017,Al Hail,Seeb,23.6814,58.1929,-70,5G,VendorA,Active
+TWR-1018,Al Ghubra North,Muscat,23.6084,58.4139,-83,4G,VendorB,Active
+TWR-1019,Ruwi Industrial,Muscat,23.5799,58.5441,-99,4G,VendorB,Maintenance
+TWR-1020,Old Muscat,Muscat,23.6167,58.5933,-72,5G,VendorA,Active

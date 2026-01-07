@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Towers ({{ items.paginator.count }}){% if region %} in {{ region }}{% endif %}</h2>
+<form method="get" style="margin:8px 0">
+  <input name="region" placeholder="Filter by region" value="{{ region|default:'' }}">
+  <button>Filter</button>
+</form>
+<table>
+  <thead>
+    <tr>
+      <th>ID</th><th>Region</th><th>Installed</th><th>Type</th><th>Tech</th>
+      <th>Power</th><th>Status</th><th>Max Users</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in items %}
+    <tr>
+      <td>{{ t.tower_id }}</td>
+      <td>{{ t.region }}</td>
+      <td>{{ t.installation_date }}</td>
+      <td>{{ t.tower_type }}</td>
+      <td>{{ t.technology }}</td>
+      <td>{{ t.power_source }}</td>
+      <td>{{ t.operational_status }}</td>
+      <td>{{ t.max_capacity_users }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<div>
+  {% if items.has_previous %}<a href="?page={{ items.previous_page_number }}{% if region %}&region={{ region }}{% endif %}">Prev</a>{% endif %}
+  <span>Page {{ items.number }} of {{ items.paginator.num_pages }}</span>
+  {% if items.has_next %}<a href="?page={{ items.next_page_number }}{% if region %}&region={{ region }}{% endif %}">Next</a>{% endif %}
+</div>
+{% endblock %}

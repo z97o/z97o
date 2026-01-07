@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Regions | Omantel{% endblock %}
+{% block content %}
+  <div class="card">
+    <h1 class="page-title">Regions</h1>
+    <p class="lead">Overview of regions.</p>
+    <div class="tour">
+      <a class="btn btn-ghost" href="{% url 'dashboard:index' %}">← Back</a>
+      <a class="btn btn-next" href="{% url 'towers:index' %}">Next → Towers</a>
+    </div>
+  </div>
+{% endblock %}

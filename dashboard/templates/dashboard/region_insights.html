@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Region Insights{% endblock %}
+
+{% block content %}
+<h1>Region Insights</h1>
+<p>Key KPIs across Omantel regions based on NetInsight data.</p>
+
+<div style="margin-top: 24px; display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <!-- Chart card -->
+    <div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+        <h2 style="margin-bottom:12px;">Signal & Latency by Region</h2>
+        <canvas id="signalLatencyChart"></canvas>
+    </div>
+
+    <!-- Mini summary card -->
+    <div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+        <h2 style="margin-bottom:12px;">Quick Summary</h2>
+        <ul style="list-style:disc;padding-left:18px;">
+            <li>📶 Tracks average signal quality per region.</li>
+            <li>⏱️ Monitors average network latency (ms).</li>
+            <li>⬇️⬆️ Shows download / upload capacity (Gbps).</li>
+            <li>📞 Highlights complaints volume by region.</li>
+        </ul>
+    </div>
+</div>
+
+<div style="margin-top: 24px; background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+    <h2 style="margin-bottom:12px;">Region KPI Table</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <thead>
+            <tr>
+                <th style="border-bottom:1px solid #ddd;text-align:left;padding:8px;">Region</th>
+                <th style="border-bottom:1px solid #ddd;text-align:right;padding:8px;">Signal %</th>
+                <th style="border-bottom:1px solid #ddd;text-align:right;padding:8px;">Latency (ms)</th>
+                <th style="border-bottom:1px solid #ddd;text-align:right;padding:8px;">Download (Gbps)</th>
+                <th style="border-bottom:1px solid #ddd;text-align:right;padding:8px;">Upload (Gbps)</th>
+                <th style="border-bottom:1px solid #ddd;text-align:right;padding:8px;">Complaints</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r,s,l,d,u,c in regions|zip:signal|zip:latency|zip:download|zip:upload|zip:complaints %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Simple table rows without fancy filters (use manual loop instead of zip for compatibility) -->
+<script>
+    // We can't use complex template tricks easily, so we render the table rows in JS:
+    const regions   = {{ regions|safe }};
+    const signal    = {{ signal|safe }};
+    const latency   = {{ latency|safe }};
+    const download  = {{ download|safe }};
+    const upload    = {{ upload|safe }};
+    const complaints = {{ complaints|safe }};
+
+    const tbody = document.currentScript.previousElementSibling.querySelector('tbody');
+    for (let i = 0; i < regions.length; i++) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="border-bottom:1px solid #f0f0f0;padding:8px;">${regions[i]}</td>
+            <td style="border-bottom:1px solid #f0f0f0;padding:8px;text-align:right;">${signal[i]}</td>
+            <td style="border-bottom:1px solid #f0f0f0;padding:8px;text-align:right;">${latency[i]}</td>
+            <td style="border-bottom:1px solid #f0f0f0;padding:8px;text-align:right;">${download[i]}</td>
+            <td style="border-bottom:1px solid #f0f0f0;padding:8px;text-align:right;">${upload[i]}</td>
+            <td style="border-bottom:1px solid #f0f0f0;padding:8px;text-align:right;">${complaints[i]}</td>
+        `;
+        tbody.appendChild(tr);
+    }
+</script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('signalLatencyChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: regions,
+            datasets: [
+                {
+                    label: 'Signal Quality (%)',
+                    data: signal,
+                    yAxisID: 'y',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Latency (ms)',
+                    data: latency,
+                    type: 'line',
+                    yAxisID: 'y1',
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: {
+                    position: 'left',
+                    title: { display: true, text: 'Signal %' }
+                },
+                y1: {
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    title: { display: true, text: 'Latency (ms)' }
+                }
+            },
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,4 @@
+name,region_code,latitude,longitude,status
+BT-MUSC-0123,MUSC_N,23.588,58.407,active
+BT-DHOF-0077,DHOF,17.020,54.090,maintenance
+BT-SHRQ-0031,SHRQ,22.960,59.124,down

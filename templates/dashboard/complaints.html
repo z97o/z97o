@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+<h1>Complaints Overview</h1>
+<p>View and filter customer complaints by region, status, and type.</p>
+
+<!-- Summary Cards -->
+<div style="display:flex; gap:20px; margin-top:20px; flex-wrap:wrap;">
+    <div class="card">
+        <h3>Total Complaints</h3>
+        <p class="number">{{ total_complaints }}</p>
+    </div>
+    <div class="card">
+        <h3>Open Complaints</h3>
+        <p class="number" style="color:#d97706;">{{ open_complaints }}</p>
+    </div>
+    <div class="card">
+        <h3>Resolved Complaints</h3>
+        <p class="number" style="color:#16a34a;">{{ resolved_complaints }}</p>
+    </div>
+    <div class="card">
+        <h3>Avg Issue Duration (hrs)</h3>
+        <p class="number">{{ avg_duration }}</p>
+    </div>
+</div>
+
+<style>
+.card {
+    background:white;
+    padding:16px 20px;
+    border-radius:10px;
+    min-width:200px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+.number {
+    font-size:26px;
+    font-weight:600;
+    color:#9A7E55;
+    margin-top:8px;
+}
+</style>
+
+<!-- Filters -->
+<div style="background:white;margin-top:24px;padding:16px 20px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+    <form method="get" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
+        <div>
+            <label><strong>Region</strong></label><br>
+            <select name="region" style="padding:6px;width:180px;border-radius:4px;border:1px solid #ccc;">
+                <option value="all">All</option>
+                {% for r in regions_list %}
+                    <option value="{{ r }}" {% if region_filter == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label><strong>Status</strong></label><br>
+            <select name="status" style="padding:6px;width:160px;border-radius:4px;border:1px solid #ccc;">
+                <option value="all">All</option>
+                {% for s in status_list %}
+                    <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label><strong>Complaint Type</strong></label><br>
+            <select name="ctype" style="padding:6px;width:220px;border-radius:4px;border:1px solid #ccc;">
+                <option value="all">All</option>
+                {% for t in type_list %}
+                    <option value="{{ t }}" {% if type_filter == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label><strong>Search</strong></label><br>
+            <input type="text" name="q" value="{{ search_q }}" placeholder="ID / Region / Type"
+                   style="padding:6px;width:220px;border-radius:4px;border:1px solid #ccc;">
+        </div>
+        <div>
+            <button type="submit"
+                    style="padding:8px 16px;background:#9A7E55;color:#fff;border:none;border-radius:4px;cursor:pointer;">
+                Apply Filters
+            </button>
+        </div>
+        <div>
+            <a href="{% url 'dashboard:complaints' %}"
+               style="padding:8px 12px;background:#e5e7eb;color:#111827;border-radius:4px;text-decoration:none;">
+                Reset
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Charts Row -->
+<div style="display:grid;grid-template-columns:2fr 2fr;gap:16px;margin-top:24px;">
+    <div style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+        <h2 style="margin-bottom:12px;font-size:16px;">Top Complaint Reasons</h2>
+        <canvas id="typeChart"></canvas>
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+        <h2 style="margin-bottom:12px;font-size:16px;">Average Issue Duration by Region</h2>
+        <canvas id="regionDurationChart"></canvas>
+    </div>
+</div>
+
+<!-- Complaints Table -->
+<div style="background:#fff;border-radius:10px;padding:16px;margin-top:24px;margin-bottom:40px;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+    <h2 style="margin-bottom:12px;font-size:16px;">Complaints List</h2>
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+                <tr style="background:#f3f4f6;">
+                    <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;">Complaint ID</th>
+                    <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;">Date</th>
+                    <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;">Region</th>
+                    <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;">Type</th>
+                    <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;">Status</th>
+                    <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;">Duration (hrs)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in complaints %}
+                <tr>
+                    <!-- CLICKABLE ID (opens modal, full page link) -->
+                    <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;">
+                        <a href="{% url 'dashboard:complaint_detail' c|get_item:'Complaint ID' %}"
+                           class="complaint-link"
+                           data-complaint-id="{{ c|get_item:'Complaint ID' }}"
+                           data-date="{{ c|get_item:'Date'|date:'Y-m-d H:i' }}"
+                           data-region="{{ c|get_item:'Region' }}"
+                           data-type="{{ c|get_item:'Complaint Type' }}"
+                           data-status="{{ c|get_item:'Status' }}"
+                           data-duration="{{ c|get_item:'Duration of Issue (Hours)' }}"
+                           data-technology="{{ c|get_item:'Technology' }}"
+                           data-tower="{{ c|get_item:'Tower ID' }}"
+                           data-customer="{{ c|get_item:'Customer Type' }}"
+                           data-description="{{ c|get_item:'Issue Description' }}"
+                           data-resolution="{{ c|get_item:'Resolution Notes' }}"
+                           style="color:#2563eb;text-decoration:underline;cursor:pointer;">
+                            {{ c|get_item:"Complaint ID" }}
+                        </a>
+                    </td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;">
+                        {{ c|get_item:"Date"|date:"Y-m-d" }}
+                    </td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;">
+                        {{ c|get_item:"Region" }}
+                    </td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;">
+                        {{ c|get_item:"Complaint Type" }}
+                    </td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;">
+                        {{ c|get_item:"Status" }}
+                    </td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;">
+                        {{ c|get_item:"Duration of Issue (Hours)"|floatformat:1 }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="padding:8px;text-align:center;color:#6b7280;">
+                        No complaints found for the selected filters.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal for quick complaint details -->
+<div id="complaintModal" class="modal-overlay">
+    <div class="modal-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h2 id="m_title" style="margin:0;font-size:18px;">Complaint Details</h2>
+            <button id="modalCloseBtn" style="border:none;background:none;font-size:20px;cursor:pointer;">✕</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:14px;margin-bottom:16px;">
+            <div><strong>Complaint ID:</strong> <span id="m_id"></span></div>
+            <div><strong>Date:</strong> <span id="m_date"></span></div>
+            <div><strong>Region:</strong> <span id="m_region"></span></div>
+            <div><strong>Status:</strong> <span id="m_status"></span></div>
+            <div><strong>Type:</strong> <span id="m_type"></span></div>
+            <div><strong>Duration (hrs):</strong> <span id="m_duration"></span></div>
+            <div><strong>Technology:</strong> <span id="m_tech"></span></div>
+            <div><strong>Tower ID:</strong> <span id="m_tower"></span></div>
+            <div><strong>Customer Type:</strong> <span id="m_customer"></span></div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+            <strong>Issue Description:</strong>
+            <p id="m_desc" style="margin-top:4px;"></p>
+        </div>
+        <div style="margin-bottom:16px;">
+            <strong>Resolution Notes:</strong>
+            <p id="m_resolution" style="margin-top:4px;"></p>
+        </div>
+
+        <div style="text-align:right;">
+            <a id="m_full_link" href="#"
+               style="padding:8px 14px;background:#9A7E55;color:#fff;border-radius:4px;text-decoration:none;">
+                Open full detail page
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+.modal-overlay.show {
+    display: flex;
+}
+.modal-content {
+    background: #fff;
+    padding: 18px 20px;
+    border-radius: 10px;
+    width: 600px;
+    max-width: 95%;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+</style>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const typeLabels = {{ chart_types|safe }};
+    const typeCounts = {{ chart_type_counts|safe }};
+
+    const regionLabels = {{ chart_regions|safe }};
+    const regionAvg = {{ chart_regions_avg|safe }};
+
+    // Top Complaint Reasons
+    new Chart(document.getElementById("typeChart"), {
+        type: "bar",
+        data: {
+            labels: typeLabels,
+            datasets: [{
+                label: "Complaints",
+                data: typeCounts,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: "Complaints" } },
+                x: { title: { display: true, text: "Complaint Type" } }
+            }
+        }
+    });
+
+    // Average Duration by Region
+    new Chart(document.getElementById("regionDurationChart"), {
+        type: "bar",
+        data: {
+            labels: regionLabels,
+            datasets: [{
+                label: "Avg Duration (hrs)",
+                data: regionAvg,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: "Hours" } },
+                x: { title: { display: true, text: "Region" } }
+            }
+        }
+    });
+
+    // ===== Modal logic =====
+    const modal = document.getElementById("complaintModal");
+    const closeBtn = document.getElementById("modalCloseBtn");
+    const fullLink = document.getElementById("m_full_link");
+
+    function openModalFromLink(link) {
+        document.getElementById("m_id").textContent = link.dataset.complaintId || "";
+        document.getElementById("m_date").textContent = link.dataset.date || "";
+        document.getElementById("m_region").textContent = link.dataset.region || "";
+        document.getElementById("m_status").textContent = link.dataset.status || "";
+        document.getElementById("m_type").textContent = link.dataset.type || "";
+        document.getElementById("m_duration").textContent = link.dataset.duration || "";
+        document.getElementById("m_tech").textContent = link.dataset.technology || "";
+        document.getElementById("m_tower").textContent = link.dataset.tower || "";
+        document.getElementById("m_customer").textContent = link.dataset.customer || "";
+        document.getElementById("m_desc").textContent = link.dataset.description || "";
+        document.getElementById("m_resolution").textContent = link.dataset.resolution || "";
+
+        fullLink.href = link.href;
+        modal.classList.add("show");
+    }
+
+    document.querySelectorAll(".complaint-link").forEach(link => {
+        link.addEventListener("click", function (e) {
+            e.preventDefault();    // open modal instead of navigating directly
+            openModalFromLink(this);
+        });
+    });
+
+    closeBtn.addEventListener("click", () => modal.classList.remove("show"));
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+            modal.classList.remove("show");
+        }
+    });
+</script>
+{% endblock %}

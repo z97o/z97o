@@ -1,0 +1,39 @@
+<!-- dashboard/templates/dashboard/tower.html -->
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<h2 class="mb-2" style="color:#9A7E55;">Tower Map & Low-Performance Areas</h2>
+<div id="map" style="height:500px;border:1px solid #ddd;border-radius:12px;"></div>
+<ul id="lowspots" class="mt-3"></ul>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<script>
+const map = L.map('map').setView([21.5, 55.9], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+
+// Load heatmap
+(async function(){
+  const h = await fetch("{% url 'dashboard:api_towers_heatmap' %}").then(r=>r.json());
+  const heat = h.points.map(p => [p.lat, p.lng, p.intensity]);
+  L.heatLayer(heat, {radius:20, blur:15}).addTo(map);
+})();
+
+// Load lowspots list
+(async function(){
+  const ls = await fetch("{% url 'dashboard:api_lowspots' %}").then(r=>r.json());
+  const ul = document.getElementById('lowspots');
+  ul.innerHTML = ls.lowspots.map(x => `<li><strong>${x.region}</strong> — Avg Signal: ${Number(x.avg_sig||0).toFixed(2)}</li>`).join('');
+})();
+
+// ✅ Add this quickFault function here (after your map code)
+async function quickFault(towerId){
+  const fd = new FormData();
+  fd.append("tower_id", towerId);
+  fd.append("note", "Auto from map");
+  const r = await fetch("{% url 'dashboard:api_fault_create' %}", {method:"POST", body:fd});
+  const d = await r.json();
+  alert(d.ok ? "✅ Fault reported successfully" : (d.error || "Error reporting fault"));
+}
+</script>
+{% endblock %}

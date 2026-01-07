@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Login - NetInsight{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 40px auto; padding: 24px; border-radius: 12px; background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    <h2 style="text-align: center; margin-bottom: 20px;">Login</h2>
+
+    {% if messages %}
+        <ul style="color: red; font-size: 14px;">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for field in form %}
+                <div>
+                    <label style="font-size: 14px;">{{ field.label }}</label><br>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div style="color: red; font-size: 12px;">
+                            {{ field.errors|striptags }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <button type="submit"
+                style="margin-top: 16px; width: 100%; padding: 10px; border: none; border-radius: 8px; background: #9A7E55; color: white; font-weight: bold;">
+            Login
+        </button>
+    </form>
+
+    <p style="margin-top: 16px; font-size: 14px; text-align: center;">
+        Don't have an account?
+        <a href="{% url 'dashboard:register' %}">Register here</a>
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'base.html' %}{% load static %}
+{% block page_title %}Regions{% endblock %}
+{% block content %}
+<div class="grid">
+  <div class="col-12"><div class="card header"><span>📍</span><strong>Regions</strong>
+    <span class="badge">{{ regions|length }} total</span></div></div>
+
+  <div class="col-4"><div class="kpi">👥 <div><div>Total Users</div>
+    <strong>{{ agg.total_users|default:"—" }}</strong></div></div></div>
+  <div class="col-4"><div class="kpi">💾 <div><div>Avg Usage (GB)</div>
+    <strong>{{ agg.avg_usage|floatformat:2|default:"—" }}</strong></div></div></div>
+  <div class="col-4"><div class="kpi">📣 <div><div>Total Complaints</div>
+    <strong>{{ agg.total_complaints|default:"0" }}</strong></div></div></div>
+
+  <div class="col-12 card body">
+    <h3 style="margin:0 0 .8rem 0;">Region Summary</h3>
+    <table class="table">
+      <thead><tr><th>Region</th><th>Total Users</th><th>Average Usage (GB)</th><th>Complaints</th></tr></thead>
+      <tbody>
+        {% for r in regions %}
+          <tr>
+            <td>{{ r.region_name }}</td>
+            <td>{{ r.total_users|default:"—" }}</td>
+            <td>{{ r.avg_usage_gb|floatformat:2 }}</td>
+            <td>{{ r.complaints_count|default:"0" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4">No data available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+<!-- templates/dashboard/dashboard.html -->
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+{% if alerts %}
+<div style="margin-top:20px;margin-bottom:20px;">
+    <h2 style="font-size:18px;margin-bottom:10px;">Alerts Center</h2>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+
+        {% for a in alerts %}
+        {% if a.severity == "critical" %}
+            {% with bg="#fee2e2" border="#b91c1c" %}
+        {% elif a.severity == "high" %}
+            {% with bg="#ffedd5" border="#c2410c" %}
+        {% elif a.severity == "medium" %}
+            {% with bg="#fef3c7" border="#d97706" %}
+        {% else %}
+            {% with bg="#e5f3ff" border="#2563eb" %}
+        {% endif %}
+
+        <div style="
+            background: {{ bg }};
+            border-left: 4px solid {{ border }};
+            padding:10px 12px;
+            border-radius:6px;
+            display:flex;
+            align-items:flex-start;
+            gap:8px;">
+            <div style="font-size:20px;width:24px;">{{ a.icon }}</div>
+            <div>
+                <div style="font-weight:600;">{{ a.title }}</div>
+                <div style="font-size:13px;color:#4b5563;">{{ a.message }}</div>
+                <div style="font-size:11px;color:#6b7280;margin-top:2px;">
+                    Category: {{ a.category }} • Severity: {{ a.severity|title }}
+                </div>
+            </div>
+        </div>
+
+        {% endwith %}
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div style="margin-top:20px;margin-bottom:20px;background:#ecfdf5;border-left:4px solid #16a34a;padding:10px 12px;border-radius:6px;">
+    ✅ No active alerts. Network and complaints are within normal thresholds.
+</div>
+{% endif %}
+
+  <h1>Dashboard</h1>
+  <p>Welcome to NetInsight.</p>
+{% endblock %}

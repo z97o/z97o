@@ -1,0 +1,48 @@
+<!-- dashboard/templates/dashboard/fault.html -->
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<h2 class="mb-2" style="color:#9A7E55;">Fault Logs</h2>
+<button class="btn btn-primary mb-3" onclick="openModal()">+ Report Fault</button>
+<table class="table table-striped">
+  <thead><tr><th>ID</th><th>Tower</th><th>Region</th><th>Status</th><th>Created</th><th>Resolved</th><th>Note</th></tr></thead>
+  <tbody>
+    {% for f in faults %}
+    <tr>
+      <td>{{ f.id }}</td>
+      <td>{{ f.tower.tower_id }}</td>
+      <td>{{ f.tower.region }}</td>
+      <td>{{ f.status_before }} → {{ f.status_after }}</td>
+      <td>{{ f.created_at|date:"Y-m-d H:i" }}</td>
+      <td>{{ f.resolved_at|date:"Y-m-d H:i"|default:"-" }}</td>
+      <td>{{ f.note|default:"-" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7" class="text-center">No faults</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Simple modal -->
+<div id="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.3);">
+  <div style="background:#fff; margin:10% auto; padding:20px; width:480px; border-radius:12px;">
+    <h5>Report Fault</h5>
+    <label>Tower ID</label><input id="m_tower" class="form-control mb-2">
+    <label>Note</label><textarea id="m_note" class="form-control mb-2"></textarea>
+    <button class="btn btn-success" onclick="submitFault()">Submit</button>
+    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<script>
+function openModal(){ document.getElementById('modal').style.display='block'; }
+function closeModal(){ document.getElementById('modal').style.display='none'; }
+async function submitFault(){
+  const fd = new FormData();
+  fd.append("tower_id", document.getElementById("m_tower").value);
+  fd.append("note", document.getElementById("m_note").value);
+  const r = await fetch("{% url 'dashboard:api_fault_create' %}", {method:"POST", body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}});
+  const d = await r.json();
+  if(d.ok){ location.reload(); } else { alert(d.error||"Error"); }
+}
+</script>
+{% endblock %}

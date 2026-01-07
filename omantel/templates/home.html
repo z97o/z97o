@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Omantel KPIs</title></head>
+  <body>
+    <h1>Omantel — Last 10 Metrics</h1>
+    <div id="data"></div>
+    <script>
+      fetch('/api/metrics/?page_size=10')
+        .then(r => r.json())
+        .then(d => {
+          const list = d.results || d;
+          document.getElementById('data').innerHTML =
+            `<pre>${JSON.stringify(list, null, 2)}</pre>`;
+        });
+    </script>
+  </body>
+</html>

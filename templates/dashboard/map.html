@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div style="background:#fff;padding:15px;border-radius:8px;">
+  <div id="filters" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;background:#111827;padding:10px;border-radius:8px;">
+    <select id="regionFilter"><option value="">All</option></select>
+    <select id="techFilter"><option value="">All</option></select>
+    <select id="signalFilter"><option value="">All</option></select>
+    <select id="windowFilter">
+      <option value="Any">Any</option><option value="24h">24h</option>
+      <option value="7d">7d</option><option value="30d">30d</option>
+    </select>
+    <button id="applyFilter" style="background:#9A7E55;color:#fff;border:none;padding:6px 15px;border-radius:6px;">Apply</button>
+    <button id="resetFilter" style="background:#fff;border:1px solid #ccc;padding:6px 15px;border-radius:6px;">Reset</button>
+  </div>
+
+  <div id="map" style="height:500px;border-radius:8px;"></div>
+
+  <div id="legend" style="display:none;">
+    <strong>Status</strong>
+    <div><span style="color:#22c55e;">●</span> Good</div>
+    <div><span style="color:#facc15;">●</span> Moderate</div>
+    <div><span style="color:#ef4444;">●</span> Poor</div>
+    <div><span style="color:#9ca3af;">●</span> Down</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{% static 'dashboard/js/map.js' %}?v=2"></script>
+{% endblock %}

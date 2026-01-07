@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(12, minmax(0,1fr)); }
+  .card { background:#fff; border-radius:12px; padding:16px; box-shadow:0 1px 8px #00000012; }
+  .col-12 { grid-column: span 12; }
+  .col-6 { grid-column: span 6; }
+  .title { color:#9A7E55; font-weight:700; margin:0 0 10px; }
+  .kv { display:flex; flex-wrap:wrap; gap:16px; }
+  .kv > div { min-width: 180px; }
+  .pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; color:#fff; }
+  .good { background:#22c55e; } .moderate { background:#f59e0b; } .poor { background:#ef4444; } .down { background:#6b7280; }
+  table { width:100%; border-collapse:collapse; }
+  th,td { border-bottom:1px solid #eee; padding:8px 6px; text-align:left; }
+  .muted { color:#666; font-size:13px; }
+</style>
+
+<h2 class="title">Tower Detail</h2>
+
+<div class="grid">
+  <!-- Tower summary -->
+  <div class="card col-12">
+    <div class="kv">
+      <div><strong>ID:</strong> {{ tower.id }}</div>
+      <div><strong>Tower Code:</strong> {{ tower.tower_id }}</div>
+      <div><strong>Region:</strong> {{ tower.region }}</div>
+      <div><strong>Type:</strong> {{ tower.tower_type|default:"-" }}</div>
+      <div><strong>Technology:</strong> {{ tower.technology|default:"-" }}</div>
+      <div><strong>Power:</strong> {{ tower.power_source|default:"-" }}</div>
+      <div><strong>Capacity:</strong> {{ tower.max_capacity_users|default:"-" }}</div>
+      <div><strong>Installed:</strong> {{ tower.installation_date|default:"-" }}</div>
+      <div><strong>Days in service:</strong> {{ days_in_service|default:"-" }}</div>
+      <div>
+        <strong>Status:</strong>
+        {% with sc=status_cat|lower %}
+          <span class="pill {% if sc == 'good' %}good{% elif sc == 'moderate' %}moderate{% elif sc == 'poor' %}poor{% else %}down{% endif %}">
+            {{ status_cat }}
+          </span>
+        {% endwith %}
+        <span class="muted">({{ tower.operational_status|default:"Unknown" }})</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Region metrics -->
+  <div class="card col-6">
+    <h3 class="title">Region Metrics</h3>
+    <div class="kv">
+      <div><strong>Avg Download (Mbps):</strong> {{ region_dl_mbps|default:"-" }}</div>
+      <div><strong>Residential Users:</strong> {{ region_users.residential|default:"-" }}</div>
+      <div><strong>Business Users:</strong> {{ region_users.business|default:"-" }}</div>
+    </div>
+    <p class="muted">Region metrics are derived from the latest entry in <em>RegionMetrics</em>.</p>
+  </div>
+
+  <!-- Complaints -->
+  <div class="card col-6">
+    <h3 class="title">Complaints</h3>
+    <div class="kv">
+      <div><strong>Last 7 days:</strong> {{ complaints_7d }}</div>
+      <div><strong>Last 30 days:</strong> {{ complaints_30d }}</div>
+    </div>
+    <table style="margin-top:10px">
+      <thead><tr><th>ID</th><th>Date</th><th>Type</th><th>Impact</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for c in recent_complaints %}
+        <tr>
+          <td>{{ c.complaint_id }}</td>
+          <td>{{ c.date }}</td>
+          <td>{{ c.complaint_type }}</td>
+          <td>{{ c.impact_level }}</td>
+          <td>{{ c.status }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="muted">No recent complaints for this region.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Status timeline -->
+  <div class="card col-6">
+    <h3 class="title">Status Timeline</h3>
+    <table>
+      <thead><tr><th>When</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for e in status_events %}
+        <tr>
+          <td>{{ e.at }}</td>
+          <td>{{ e.status }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="2" class="muted">No status events recorded.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted">Automatic entries are created when a tower's <em>operational_status</em> changes.</p>
+  </div>
+
+  <!-- Fault logs -->
+  <div class="card col-6">
+    <h3 class="title">Fault Logs</h3>
+    <table>
+      <thead><tr><th>Resolved At</th><th>Before</th><th>After</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for f in fault_logs %}
+        <tr>
+          <td>{{ f.resolved_at }}</td>
+          <td>{{ f.status_before }}</td>
+          <td>{{ f.status_after }}</td>
+          <td>{{ f.note|default:"-" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="muted">No fault logs recorded.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Recommendation -->
+  <div class="card col-12">
+    <h3 class="title">Recommended Next Action</h3>
+    <p>{{ recommendation }}</p>
+  </div>
+</div>
+{% endblock %}

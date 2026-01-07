@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Network Dashboard{% endblock %}
+{% block nav_dashboard_active %}active{% endblock %}
+
+{% block content %}
+<section class="cards">
+  <div class="card pill">
+    <div class="pill-icon">📍</div>
+    <div><div class="pill-title">Regions</div><div class="pill-num">{{ regions_count }}</div></div>
+  </div>
+  <div class="card pill">
+    <div class="pill-icon">🗼</div>
+    <div><div class="pill-title">Towers</div><div class="pill-num">{{ towers_count }}</div></div>
+  </div>
+  <div class="card pill">
+    <div class="pill-icon">💬</div>
+    <div><div class="pill-title">Complaints</div><div class="pill-num">{{ complaints_count }}</div></div>
+  </div>
+  <div class="card pill warn">
+    <div class="pill-icon">⚠️</div>
+    <div><div class="pill-title">Open</div><div class="pill-num">{{ status_open }}</div></div>
+  </div>
+</section>
+
+<section class="grid">
+  <div class="card tall">
+    <div class="card-title">Tower Map</div>
+    <div class="map-placeholder">
+      <div class="legend"><span>📍</span> Towers— demo map placeholder (Leaflet/Mapbox later)</div>
+    </div>
+  </div>
+
+  <div class="card tall">
+    <div class="card-title">Complaints by Status</div>
+    <canvas id="statusChart"
+            data-open="{{ status_open }}"
+            data-inprogress="{{ status_inprogress }}"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><span class="dot dot-green"></span>In Progress</div>
+      <div class="legend-item"><span class="dot dot-orange"></span>Open</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Complaints by Category</div>
+    <canvas id="categoryChart"
+            data-labels="{{ category_labels|join:',' }}"
+            data-values="{{ category_values|join:',' }}"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Complaints by Priority</div>
+    <canvas id="priorityChart"
+            data-labels="{{ priority_labels|join:',' }}"
+            data-values="{{ priority_values|join:',' }}"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><span class="dot"></span>High</div>
+      <div class="legend-item"><span class="dot"></span>Medium</div>
+      <div class="legend-item"><span class="dot"></span>Low</div>
+      <div class="legend-item"><span class="dot"></span>Critical</div>
+    </div>
+  </div>
+</section>
+{% endblock %}

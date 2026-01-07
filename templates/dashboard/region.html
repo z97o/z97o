@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NetInsight — Region Comparison</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{% static 'omantel/css/base.css' %}">
+  <style>
+    body { margin:0; padding:16px; font-family:system-ui, Arial, sans-serif; color:#e6edf3; background:#0d1117; }
+    .grid { display:grid; gap:16px; margin-top:16px; }
+    .row { display:grid; grid-template-columns:1fr; gap:16px; }
+    @media (min-width: 980px){ .row{ grid-template-columns:1fr 1fr; } }
+    .card { background:#0d1117; border:1px solid #30363d; border-radius:14px; padding:14px; }
+    canvas { width:100% !important; max-height:420px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  {% include "dashboard/_nav.html" %}
+
+  <div class="grid">
+    <div class="card"><canvas id="signalChart"></canvas></div>
+    <div class="row">
+      <div class="card"><canvas id="downloadChart"></canvas></div>
+      <div class="card"><canvas id="outageChart"></canvas></div>
+    </div>
+  </div>
+
+  <script>
+    function makeBar(ctx, label, labels, data) {
+      if (ctx.chart) ctx.chart.destroy?.();
+      const c = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label, data }] },
+        options: { responsive:true, scales:{ x:{ grid:{ display:false } }, y:{ beginAtZero:true } }, plugins:{ legend:{ display:false } } }
+      }); ctx.chart = c; return c;
+    }
+    function makeLine(ctx, label, labels, data) {
+      if (ctx.chart) ctx.chart.destroy?.();
+      const c = new Chart(ctx, {
+        type:'line',
+        data:{ labels, datasets:[{ label, data, tension:0.25 }] },
+        options:{ responsive:true, plugins:{ legend:{ display:false } } }
+      }); ctx.chart = c; return c;
+    }
+    async function load() {
+      const r = await fetch("{% url 'dashboard:region-stats' %}", { cache:"no-store" });
+      const d = await r.json();
+      const regions = d.regions || [];
+      const sctx = document.getElementById('signalChart').getContext('2d');
+      const dctx = document.getElementById('downloadChart').getContext('2d');
+      const octx = document.getElementById('outageChart').getContext('2d');
+      makeBar(sctx, 'Avg Signal (dBm)', regions, d.signal || []);
+      makeLine(dctx, 'Avg Download (Mbps)', regions, d.download || []);
+      makeBar(octx, 'Outages (24h)', regions, d.outages || []);
+    }
+    load();
+  </script>
+</body>
+</html>

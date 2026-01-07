@@ -1,0 +1,22 @@
+<!-- dashboard/templates/dashboard/region.html -->
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<h2 class="mb-3" style="color:#9A7E55;">Region Comparison</h2>
+<canvas id="regionChart" height="120"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(async function(){
+  const r = await fetch("{% url 'dashboard:api_regions_metrics' %}");
+  const d = await r.json();
+  const ctx = document.getElementById('regionChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: d.regions,
+      datasets: [{ label: 'Avg Signal', data: d.signal }]
+    },
+    options: { responsive:true, maintainAspectRatio:false }
+  });
+})();
+</script>
+{% endblock %}

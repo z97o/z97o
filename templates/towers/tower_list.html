@@ -1,0 +1,43 @@
+{% extends 'base.html' %}{% load static %}
+{% block page_title %}Towers{% endblock %}
+{% block content %}
+<div class="grid">
+  <div class="col-12"><div class="card header"><span>📡</span><strong>Towers</strong>
+    <span class="badge">{{ towers|length }} total</span></div></div>
+
+  <div class="col-8 card body" style="min-height:280px;">
+    <h3 style="margin:0 0 .8rem 0;">Tower Map</h3>
+    <p style="color:var(--ink-soft);margin:0;">🗺️ Map placeholder — integrate Leaflet/Mapbox later.</p>
+  </div>
+
+  <div class="col-4 card body">
+    <h3 style="margin:0 0 .8rem 0;">Status</h3>
+    <div class="badge" style="background:#e8f9ef;color:#14532d;">● Active</div>
+    <div class="badge" style="background:#fff7e6;color:#7a4f04;">● Maintenance</div>
+    <div class="badge" style="background:#ffecec;color:#7f1d1d;">● Offline</div>
+  </div>
+
+  <div class="col-12 card body">
+    <h3 style="margin:0 0 .8rem 0;">Tower Inventory</h3>
+    <table class="table">
+      <thead><tr><th>Tower</th><th>Region</th><th>Signal Strength</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for t in towers %}
+          <tr>
+            <td>{{ t.tower_name }}</td>
+            <td>{{ t.region.region_name }}</td>
+            <td>{{ t.signal_strength|floatformat:1 }}</td>
+            <td>
+              {% if t.status == 'Active' %}<span class="status active">Active</span>
+              {% elif t.status == 'Maintenance' %}<span class="status maint">Maintenance</span>
+              {% else %}<span class="status off">Offline</span>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4">No towers available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

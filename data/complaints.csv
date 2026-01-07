@@ -1,0 +1,4 @@
+title,region_code,tower_name,category,priority,status,created_at
+Coverage issue in Qurum,MUSC_N,BT-MUSC-0123,Coverage,high,open,2025-10-20 09:30
+Outage reported - Salalah,DHOF,BT-DHOF-0077,Outage,medium,in_progress,2025-10-19 14:10
+Slow speed - Ibra,SHRQ,,Speed,low,closed,2025-10-15 18:45

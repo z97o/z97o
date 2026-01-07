@@ -1,0 +1,317 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Omantel NetInsight</title>
+<link rel="stylesheet" href="{% static 'css/netinsight.css' %}">
+<link rel="stylesheet" href="{% static 'css/netinsight-glass.css' %}">
+
+
+  <style>
+    body{ margin:0; font-family:"Poppins", sans-serif; background:#f5f5f5; color:#333; transition: background-color .25s ease, color .25s ease; }
+    body::before{
+  content:"";
+  position:fixed;
+  inset:-120px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(154,126,85,.18), transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(0,0,0,.08), transparent 45%),
+    radial-gradient(circle at 55% 85%, rgba(154,126,85,.12), transparent 45%);
+  z-index:-1;
+  filter: blur(0px);
+}
+
+
+    header{
+  background: rgba(154,126,85,.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color:#fff;
+  padding:15px 20px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  border-bottom: 1px solid rgba(255,255,255,.25);
+}
+
+    .header-left,.header-right{ display:flex; align-items:center; gap:10px; }
+    header h1{ margin:0; font-size:22px; font-weight:600; }
+
+    .menu-btn,.theme-btn,.logout-btn{
+      background:#fff; color:#9A7E55; border:none; padding:8px 12px;
+      border-radius:10px; cursor:pointer; font-size:16px; transition:.25s;
+      text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-weight:500;
+    }
+    .menu-btn:hover,.theme-btn:hover,.logout-btn:hover{ background:#f2d9b1; color:#6c5434; }
+
+    .icon-btn{
+      position:relative;
+      border:1px solid rgba(0,0,0,.08);
+      background:#fff; color:#9A7E55;
+      border-radius:10px; padding:8px 12px;
+      cursor:pointer; font-size:18px; transition:.25s;
+    }
+    .icon-btn:hover{ background:#f2d9b1; color:#6c5434; }
+
+    .badge{
+      position:absolute; top:-6px; right:-6px;
+      background:#e53935; color:#fff; border-radius:999px;
+      min-width:18px; height:18px; display:none;
+      align-items:center; justify-content:center;
+      font-size:12px; padding:0 6px; border:2px solid #fff;
+    }
+
+ .sidebar{
+  height:100%;
+  width:250px;
+  background: rgba(154,126,85,.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  position:fixed;
+  top:0;
+  left:-250px;
+  transition:left .3s;
+  padding-top:60px;
+  z-index:1000;
+  border-right:1px solid rgba(255,255,255,.25);
+}
+
+    .sidebar.active{ left:0; }
+    .sidebar a{ display:block; color:#fff; padding:14px 25px; text-decoration:none; font-size:17px; transition:.25s; }
+    .sidebar a:hover{ background:#bfa57a; }
+
+    .content{ margin-left:0; transition: margin-left .3s; padding:30px; padding-bottom:70px; }
+    .sidebar.active ~ .content{ margin-left:250px; }
+
+    footer{
+      background:#9A7E55; color:#fff; text-align:center;
+      padding:10px; position:fixed; bottom:0; left:0; width:100%; font-size:13px;
+    }
+
+    .toast{
+      position:fixed; top:90px; right:18px; width:340px;
+      background:#fff; border:1px solid #eee; border-radius:14px;
+      box-shadow:0 10px 22px rgba(0,0,0,.18);
+      padding:14px 14px 12px; z-index:9999; display:none;
+    }
+    .toast-top{ display:flex; justify-content:space-between; gap:10px; margin-bottom:8px; }
+    .toast-title{ font-weight:700; font-size:14px; }
+    .toast-time{ font-size:12px; color:#777; white-space:nowrap; }
+    .toast-msg{ font-size:14px; line-height:1.5; color:#222; margin-bottom:12px; }
+    .toast-actions{ display:flex; justify-content:flex-end; gap:8px; }
+    .btn-soft,.btn-plain{
+      border:1px solid #ddd; border-radius:10px; padding:7px 10px; cursor:pointer;
+    }
+    .btn-soft{ background:#f6f6f6; }
+    .btn-plain{ background:#fff; }
+
+    @media (max-width:768px){
+      header h1{ font-size:18px; }
+      .menu-btn,.theme-btn,.logout-btn{ font-size:14px; }
+      .toast{ width:300px; right:10px; }
+    }
+
+    body.dark-mode{ background:#121212; color:#e4e4e4; }
+    body.dark-mode header{ background:#3c2e1b; }
+    body.dark-mode .menu-btn,
+    body.dark-mode .theme-btn,
+    body.dark-mode .logout-btn,
+    body.dark-mode .icon-btn{
+      background:#2b2b2b; color:#f5f5f5; border-color:#444;
+    }
+    body.dark-mode .menu-btn:hover,
+    body.dark-mode .theme-btn:hover,
+    body.dark-mode .logout-btn:hover,
+    body.dark-mode .icon-btn:hover{
+      background:#444; color:#fff;
+    }
+    body.dark-mode .sidebar{ background:#2b2b2b; }
+    body.dark-mode .sidebar a:hover{ background:#3a3a3a; }
+    body.dark-mode footer{ background:#1f1f1f; }
+    body.dark-mode .toast{ background:#1f1f1f; border-color:#333; color:#e4e4e4; }
+    body.dark-mode .toast-msg{ color:#e4e4e4; }
+    body.dark-mode .btn-soft{ background:#2b2b2b; border-color:#444; color:#fff; }
+    body.dark-mode .btn-plain{ background:#1f1f1f; border-color:#444; color:#fff; }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+<header class="glass">
+    <div class="header-left" style="display:flex;align-items:center;gap:12px;">
+      <button class="menu-btn" type="button" onclick="toggleMenu()">☰ Menu</button>
+
+      <img src="{% static 'images/omantel-logo.png' %}" alt="Omantel Logo" style="height:44px;object-fit:contain;" />
+
+<div style="display:flex;flex-direction:column;line-height:1.1;">
+  <span style="font-size:18px;font-weight:800;letter-spacing:.5px;">NetInsight</span>
+  <span style="font-size:12px;opacity:.9;">Omantel Network Monitoring</span>
+</div>
+
+    </div>
+
+    <div class="header-right">
+      <button class="theme-btn" id="themeToggleBtn" type="button" onclick="toggleDarkMode()">🌙 Dark</button>
+
+      <button class="icon-btn" id="alertBtn" type="button" title="Alerts">
+        🔔
+        <span class="badge" id="alertBadge">1</span>
+      </button>
+
+      {% if user.is_authenticated %}
+        <a href="{% url 'dashboard:logout' %}" class="logout-btn">Logout</a>
+      {% else %}
+        <a href="{% url 'dashboard:login' %}" class="logout-btn">Login</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+<div id="sidebar" class="sidebar glass">
+    <a href="{% url 'dashboard:home' %}">🏠 Home</a>
+    <a href="{% url 'dashboard:home' %}">📊 Dashboard</a>
+    <a href="{% url 'dashboard:regions' %}">🌍 Region Insights</a>
+    <a href="{% url 'dashboard:towers' %}">📶 Tower Map</a>
+    <a href="{% url 'dashboard:kpi_reports' %}">📈 KPI Reports</a>
+    <a href="{% url 'dashboard:complaints' %}">📞 Complaints</a>
+  </div>
+
+  <!-- Content -->
+<div class="content">
+  <div class="glass" style="padding:22px;">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+  <!-- Footer -->
+  <footer>© 2025 Omantel NetInsight | All Rights Reserved</footer>
+
+  <!-- Toast -->
+<div id="alertToast" class="toast glass">
+    <div class="toast-top">
+      <div class="toast-title" id="toastTitle">New Alert</div>
+      <div class="toast-time" id="toastTime"></div>
+    </div>
+    <div class="toast-msg" id="toastMsg"></div>
+    <div class="toast-actions">
+      <button id="toastReadBtn" class="btn-soft" type="button">Mark as read</button>
+      <button id="toastCloseBtn" class="btn-plain" type="button">Close</button>
+    </div>
+  </div>
+
+  <script>
+    function toggleMenu(){
+      const sidebar = document.getElementById("sidebar");
+      if(!sidebar) return;
+      sidebar.classList.toggle("active");
+    }
+
+    // Theme
+    function applyTheme(theme){
+      const body = document.body;
+      const btn = document.getElementById("themeToggleBtn");
+      if(theme === "dark"){
+        body.classList.add("dark-mode");
+        if(btn) btn.innerText = "☀️ Light";
+      } else {
+        body.classList.remove("dark-mode");
+        if(btn) btn.innerText = "🌙 Dark";
+      }
+    }
+
+    function toggleDarkMode(){
+      const isDark = document.body.classList.contains("dark-mode");
+      const newTheme = isDark ? "light" : "dark";
+      localStorage.setItem("netinsight-theme", newTheme);
+      applyTheme(newTheme);
+    }
+
+    (function(){
+      const saved = localStorage.getItem("netinsight-theme") || "light";
+      applyTheme(saved);
+    })();
+
+    // Alerts (Toast)
+    let currentAlertId = null;
+
+    function getCookie(name){
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if(parts.length === 2) return parts.pop().split(";").shift();
+      return "";
+    }
+
+    function showToast(){ const t=document.getElementById("alertToast"); if(t) t.style.display="block"; }
+    function hideToast(){ const t=document.getElementById("alertToast"); if(t) t.style.display="none"; }
+
+    async function checkLatestAlert(){
+      const badge = document.getElementById("alertBadge");
+      try{
+        const res = await fetch("/alerts/latest/", { headers: { "Accept": "application/json" } });
+        const data = await res.json();
+
+        if(!data.has_alert){
+          currentAlertId = null;
+          if(badge) badge.style.display = "none";
+          hideToast();
+          return;
+        }
+
+        currentAlertId = data.id;
+
+        const titleEl = document.getElementById("toastTitle");
+        const msgEl = document.getElementById("toastMsg");
+        const timeEl = document.getElementById("toastTime");
+
+        if(titleEl) titleEl.textContent = data.title || "New Alert";
+        if(msgEl) msgEl.textContent = data.message || "You have a new alert.";
+        if(timeEl) timeEl.textContent = data.created_at || "";
+
+        if(badge){
+          badge.textContent = "1";
+          badge.style.display = "flex";
+        }
+        showToast();
+      } catch(e){
+        console.log("Alert check failed:", e);
+      }
+    }
+
+    async function markRead(){
+      if(!currentAlertId) return;
+      const csrftoken = getCookie("csrftoken");
+      await fetch(`/alerts/mark-read/${currentAlertId}/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrftoken }
+      });
+
+      currentAlertId = null;
+      const badge = document.getElementById("alertBadge");
+      if(badge) badge.style.display = "none";
+      hideToast();
+    }
+
+    // Safe bindings
+    const readBtn = document.getElementById("toastReadBtn");
+    const closeBtn = document.getElementById("toastCloseBtn");
+    const alertBtn = document.getElementById("alertBtn");
+
+    if(readBtn) readBtn.addEventListener("click", markRead);
+    if(closeBtn) closeBtn.addEventListener("click", hideToast);
+    if(alertBtn) alertBtn.addEventListener("click", () => {
+      const toast = document.getElementById("alertToast");
+      if(!toast) return;
+      toast.style.display = (toast.style.display === "none" || toast.style.display === "") ? "block" : "none";
+    });
+
+    checkLatestAlert();
+    setInterval(checkLatestAlert, 15000);
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

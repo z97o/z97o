@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Complaints | Omantel{% endblock %}
+{% block content %}
+  <div class="card">
+    <h1 class="page-title">Complaints</h1>
+    <p class="lead">Today’s complaints and SLAs.</p>
+    <div class="tour">
+      <a class="btn btn-ghost" href="{% url 'towers:index' %}">← Back</a>
+      <a class="btn btn-primary" href="{% url 'dashboard:index' %}">Finish → Dashboard</a>
+    </div>
+  </div>
+{% endblock %}

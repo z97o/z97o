@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Towers{% endblock %}
+
+{% block content %}
+<section class="cards">
+  <div class="card"><div class="card-title">Towers</div>
+    <p>Total: {{ towers|length }}</p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-title">Tower List</div>
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">#</th>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Name</th>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Region</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in towers %}
+      <tr>
+        <td style="padding:8px; border-bottom:1px solid #eee;">{{ forloop.counter }}</td>
+        <td style="padding:8px; border-bottom:1px solid #eee;">{{ t.name|default:t.id }}</td>
+        <td style="padding:8px; border-bottom:1px solid #eee;">
+          {{ t.region|default:"—" }}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" style="padding:12px; opacity:.7;">No towers yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

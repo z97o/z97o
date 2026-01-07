@@ -1,0 +1,72 @@
+{% load static %}
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Complaints Dashboard</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; background:#f7f7f8; margin:0; }
+    .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); }
+    .card { background:#fff; border-radius:16px; padding:16px; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+    .title { color:#9A7E55; font-weight:600; margin:0 0 8px; }
+    canvas { width:100%; height:320px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="grid">
+      <div class="card">
+        <h3 class="title">Complaints by Status</h3>
+        <canvas id="statusChart"></canvas>
+      </div>
+      <div class="card">
+        <h3 class="title">Complaints by Priority</h3>
+        <canvas id="priorityChart"></canvas>
+      </div>
+      <div class="card">
+        <h3 class="title">Complaints by Category</h3>
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Embed Django context data -->
+  <script>
+    const statusData   = JSON.parse('{{ status_data|safe|escapejs }}');
+    const priorityData = JSON.parse('{{ priority_data|safe|escapejs }}');
+    const categoryData = JSON.parse('{{ category_data|safe|escapejs }}');
+  </script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script>
+    const makeDataset = (arr, key) => ({
+      labels: arr.map(d => d[key] ?? "Unknown"),
+      datasets: [{ data: arr.map(d => d.count) }]
+    });
+
+    new Chart(document.getElementById("statusChart"), {
+      type: "pie",
+      data: makeDataset(statusData, "status"),
+      options: { plugins: { legend: { position: "bottom" } } }
+    });
+
+    new Chart(document.getElementById("priorityChart"), {
+      type: "doughnut",
+      data: makeDataset(priorityData, "priority"),
+      options: { plugins: { legend: { position: "bottom" } } }
+    });
+
+    new Chart(document.getElementById("categoryChart"), {
+      type: "bar",
+      data: makeDataset(categoryData, "category"),
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  </script>
+</body>
+</html>

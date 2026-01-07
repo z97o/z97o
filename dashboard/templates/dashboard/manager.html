@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Manager Console{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Manager Console – Network Summary</h1>
+
+  <!-- KPI Cards Row -->
+  <section class="grid-3">
+    <div class="card kpi">
+      <div class="kpi-title">Avg Identify → Report (Last 7d)</div>
+      <div class="kpi-value">—</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-title">Prev 30d Baseline</div>
+      <div class="kpi-value">—</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-title">Reduction vs Baseline</div>
+      <div class="kpi-value">—</div>
+    </div>
+  </section>
+
+  <!-- Lowest-Performing Regions -->
+  <section class="card mt">
+    <div class="card-title">Lowest-Performing Regions (Top 3)</div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th>Download (Mbps)</th>
+            <th>Outages (24h)</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><i class="fa-solid fa-flag"></i> Sohar</td>
+            <td>0.00</td>
+            <td>9</td>
+            <td>1.000</td>
+          </tr>
+          <tr>
+            <td><i class="fa-solid fa-triangle-exclamation"></i> Salalah</td>
+            <td>0.00</td>
+            <td>5</td>
+            <td>0.822</td>
+          </tr>
+          <tr>
+            <td>• Seeb</td>
+            <td>0.00</td>
+            <td>4</td>
+            <td>0.778</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Infrastructure Recommendations -->
+  <section class="card mt">
+    <div class="card-title">Infrastructure Recommendations (Planned)</div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Region</th>
+            <th>Download (Mbps)</th>
+            <th>Outages (24h)</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Sohar</td>
+            <td>0.00</td>
+            <td>9</td>
+            <td>Upgrade backhaul + add carrier aggregation; review RAN capacity plan.</td>
+          </tr>
+          <!-- يمكنك تعبئة باقي الصفوف ديناميكيًا من الـ view -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

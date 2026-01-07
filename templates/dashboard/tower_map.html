@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% block title %}Tower Map{% endblock %}
+
+{% block content %}
+<h1>Tower Map</h1>
+<p>Overview of Omantel towers across Oman with operational status, technology, and capacity.</p>
+
+<div style="margin-top: 24px; display: grid; grid-template-columns: 3fr 1.2fr; gap: 24px;">
+
+    <!-- Map Card -->
+    <div style="background:#fff;border-radius:8px;padding:0;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+        <div id="towerMap" style="height: 550px; border-radius:8px;"></div>
+    </div>
+
+    <!-- Right Panel: Summary + Filters + Legend -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Summary Card -->
+        <div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+            <h2 style="margin-bottom:12px;">Tower Summary</h2>
+            <ul style="list-style:none;padding-left:0;font-size:14px;">
+                <li style="margin-bottom:6px;">
+                    <strong>Total Towers:</strong> {{ total_towers }}
+                </li>
+                <li style="margin-bottom:6px;">
+                    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:green;margin-right:6px;"></span>
+                    <strong>Active:</strong> {{ active_count }}
+                </li>
+                <li style="margin-bottom:6px;">
+                    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:orange;margin-right:6px;"></span>
+                    <strong>Maintenance:</strong> {{ maintenance_count }}
+                </li>
+                <li style="margin-bottom:6px;">
+                    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:red;margin-right:6px;"></span>
+                    <strong>Down:</strong> {{ down_count }}
+                </li>
+            </ul>
+        </div>
+
+        <!-- Filter Card -->
+        <div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+            <h2 style="margin-bottom:12px;">Filters</h2>
+
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;">
+                <div>
+                    <label for="techFilter"><strong>Technology</strong></label><br>
+                    <select id="techFilter" style="width:100%;padding:6px;border-radius:4px;border:1px solid #ccc;">
+                        <option value="all">All</option>
+                        <option value="3G">3G</option>
+                        <option value="4G">4G</option>
+                        <option value="5G">5G</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="statusFilter"><strong>Status</strong></label><br>
+                    <select id="statusFilter" style="width:100%;padding:6px;border-radius:4px;border:1px solid #ccc;">
+                        <option value="all">All</option>
+                        <option value="Active">Active</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Down">Down</option>
+                    </select>
+                </div>
+
+                <!-- Toggle Heatmap -->
+                <label style="margin-top:6px;font-size:13px;">
+                    <input type="checkbox" id="heatToggle" checked>
+                    Show Capacity Heatmap
+                </label>
+
+                <button type="button"
+                        onclick="resetFilters()"
+                        style="margin-top:4px;padding:6px 10px;border-radius:4px;border:none;background:#9A7E55;color:#fff;cursor:pointer;">
+                    Reset Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Legend Card -->
+        <div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+            <h2 style="margin-bottom:12px;">Legend</h2>
+            <ul style="list-style:none;padding-left:0;font-size:14px;">
+                <li style="margin-bottom:8px;">
+                    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:green;margin-right:8px;"></span>
+                    Active tower
+                </li>
+                <li style="margin-bottom:8px;">
+                    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:orange;margin-right:8px;"></span>
+                    Under maintenance
+                </li>
+                <li style="margin-bottom:8px;">
+                    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:red;margin-right:8px;"></span>
+                    Tower down / critical
+                </li>
+            </ul>
+
+            <p style="margin-top:8px;font-size:13px;line-height:1.5;">
+                Click a tower on the map to view details and trigger DOWN/UP events to generate Alerts.
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Leaflet Marker Cluster -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<!-- Leaflet Heatmap -->
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+<script>
+    // towers_json لازم يحتوي: id, tower_id, region, technology, power_source, status, capacity, lat, lon
+    const towers = {{ towers_json|safe }};
+
+    const map = L.map('towerMap').setView([21.5, 57.0], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    function statusColor(status) {
+        if (status === "Active") return "green";
+        if (status === "Maintenance") return "orange";
+        return "red"; // Down / other
+    }
+
+    // Cluster group
+    const clusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        iconCreateFunction: function (cluster) {
+            const count = cluster.getChildCount();
+            return new L.DivIcon({
+                html: `<div style="background:#9A7E55;color:#fff;padding:10px;border-radius:50%;width:40px;height:40px;text-align:center;line-height:20px;font-weight:bold;">${count}</div>`,
+                className: "tower-cluster",
+                iconSize: [40, 40]
+            });
+        }
+    });
+
+    // Heatmap data (weighted by capacity)
+    const heatData = towers.map(t => [
+        t.lat,
+        t.lon,
+        Math.min(t.capacity / 200000, 1.0)
+    ]);
+
+    const heatLayer = L.heatLayer(heatData, {
+        radius: 35,
+        blur: 25,
+        maxZoom: 10,
+        max: 1.0,
+        gradient: {
+            0.2: "blue",
+            0.4: "lime",
+            0.6: "yellow",
+            0.8: "orange",
+            1.0: "red"
+        }
+    });
+
+    // Markers + popups
+    const markers = [];
+
+    towers.forEach(t => {
+        const color = statusColor(t.status);
+
+        const marker = L.circleMarker([t.lat, t.lon], {
+            radius: 8,
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.85,
+            weight: 2
+        });
+
+        marker.towerData = t;
+
+        const popupHtml = `
+          <div style="min-width:230px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px;">
+              ${t.tower_id}
+            </div>
+
+            <div style="font-size:13px;line-height:1.5;">
+              <div><strong>Region:</strong> ${t.region}</div>
+              <div><strong>Technology:</strong> ${t.technology}</div>
+              <div><strong>Power:</strong> ${t.power_source}</div>
+              <div><strong>Status:</strong> ${t.status}</div>
+              <div><strong>Capacity:</strong> ${t.capacity.toLocaleString()} users</div>
+            </div>
+
+            <hr style="margin:10px 0;border:none;border-top:1px solid #eee;">
+
+            <div style="display:flex;gap:8px;">
+              <button
+                type="button"
+                onclick="sendTowerEvent(${t.id}, 'down')"
+                style="flex:1;padding:6px 10px;border-radius:6px;border:none;background:#d32f2f;color:#fff;cursor:pointer;font-size:12px;">
+                Trigger DOWN
+              </button>
+
+              <button
+                type="button"
+                onclick="sendTowerEvent(${t.id}, 'up')"
+                style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:12px;">
+                Resolve (UP)
+              </button>
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupHtml);
+
+        clusterGroup.addLayer(marker);
+        markers.push(marker);
+    });
+
+    // Add layers
+    map.addLayer(clusterGroup);
+    heatLayer.addTo(map);
+
+    // Filters + heat toggle
+    const techFilter = document.getElementById('techFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const heatToggle = document.getElementById('heatToggle');
+
+    function applyFilters() {
+        const techVal = techFilter.value;
+        const statusVal = statusFilter.value;
+
+        clusterGroup.clearLayers();
+
+        markers.forEach(marker => {
+            const t = marker.towerData;
+            const matchTech = (techVal === "all" || t.technology === techVal);
+            const matchStatus = (statusVal === "all" || t.status === statusVal);
+
+            if (matchTech && matchStatus) {
+                clusterGroup.addLayer(marker);
+            }
+        });
+    }
+
+    function resetFilters() {
+        techFilter.value = "all";
+        statusFilter.value = "all";
+        heatToggle.checked = true;
+
+        applyFilters();
+        if (!map.hasLayer(heatLayer)) {
+            heatLayer.addTo(map);
+        }
+    }
+
+    techFilter.addEventListener('change', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
+
+    heatToggle.addEventListener('change', () => {
+        if (heatToggle.checked) {
+            heatLayer.addTo(map);
+        } else {
+            map.removeLayer(heatLayer);
+        }
+    });
+
+    // CSRF + create event
+    function getCookie(name){
+      const v = `; ${document.cookie}`;
+      const p = v.split(`; ${name}=`);
+      if(p.length===2) return p.pop().split(';').shift();
+    }
+
+    async function sendTowerEvent(towerId, status){
+      try {
+        const csrftoken = getCookie("csrftoken");
+        const form = new FormData();
+        form.append("tower_id", towerId);
+        form.append("status", status);
+
+        const res = await fetch("/tower-events/create/", {
+          method: "POST",
+          headers: {"X-CSRFToken": csrftoken},
+          body: form
+        });
+
+        const data = await res.json();
+
+        if(data.ok){
+          alert(`Event created: ${status.toUpperCase()} ✅`);
+        } else {
+          alert("Failed ❌");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Error while creating event ❌");
+      }
+    }
+</script>
+
+{% endblock %}

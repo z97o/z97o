@@ -1,0 +1,93 @@
+/* Layout */
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;   /* sidebar + content */
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #0f2233;  /* your navy */
+  color: #fff;
+}
+
+.main {
+  background: #efe0c7;  /* your beige */
+  padding: 24px;
+}
+
+/* Content container */
+.container {
+  width: min(1400px, 100%);  /* allow wide content */
+  margin-inline: auto;
+}
+
+/* Card header */
+.page-header {
+  background: rgba(0,0,0,0.05);
+  border-radius: 14px;
+  padding: 16px 20px;
+  font-weight: 700;
+  font-size: 1.35rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  margin-bottom: 18px;
+}
+
+/* Responsive table */
+.table-wrap {
+  overflow: auto;                 /* horizontal scroll if needed */
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;             /* let columns breathe */
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: #faf7f1;
+  font-weight: 700;
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e8e1d6;
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0e8db;
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background: #fff8ed;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #f1f5f9;
+}
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0 16px 0;
+}
+.filter-bar input, .filter-bar select, .filter-bar button {
+  padding: 8px 10px;
+  border: 1px solid #d7c7ad;
+  border-radius: 8px;
+  background: #fff;
+}
+.filter-bar button {
+  cursor: pointer;
+}

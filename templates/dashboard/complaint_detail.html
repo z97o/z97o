@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block content %}
+<h1>Complaint {{ complaint|get_item:"Complaint ID" }}</h1>
+<p>Full details for this complaint.</p>
+
+<div style="background:#fff;padding:18px 20px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-top:20px;margin-bottom:40px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:14px;margin-bottom:16px;">
+        <div><strong>Complaint ID:</strong> {{ complaint|get_item:"Complaint ID" }}</div>
+        <div><strong>Date:</strong> {{ complaint|get_item:"Date"|date:"Y-m-d H:i" }}</div>
+        <div><strong>Region:</strong> {{ complaint|get_item:"Region" }}</div>
+        <div><strong>Status:</strong> {{ complaint|get_item:"Status" }}</div>
+        <div><strong>Complaint Type:</strong> {{ complaint|get_item:"Complaint Type" }}</div>
+        <div><strong>Duration (hrs):</strong> {{ complaint|get_item:"Duration of Issue (Hours)"|floatformat:1 }}</div>
+        <div><strong>Technology:</strong> {{ complaint|get_item:"Technology" }}</div>
+        <div><strong>Tower ID:</strong> {{ complaint|get_item:"Tower ID" }}</div>
+        <div><strong>Customer Type:</strong> {{ complaint|get_item:"Customer Type" }}</div>
+    </div>
+
+    <div style="margin-bottom:12px;">
+        <strong>Issue Description:</strong>
+        <p style="margin-top:4px;">{{ complaint|get_item:"Issue Description" }}</p>
+    </div>
+
+    <div style="margin-bottom:12px;">
+        <strong>Resolution Notes:</strong>
+        <p style="margin-top:4px;">{{ complaint|get_item:"Resolution Notes" }}</p>
+    </div>
+
+    <div style="margin-top:20px;">
+        <a href="{% url 'dashboard:complaints' %}"
+           style="padding:8px 14px;background:#e5e7eb;color:#111827;border-radius:4px;text-decoration:none;">
+           ← Back to Complaints List
+        </a>
+    </div>
+</div>
+{% endblock %}

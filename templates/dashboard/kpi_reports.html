@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h1>KPI Reports</h1>
+<p>KPI indicators by region and date.</p>
+
+<form method="get" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+  <input type="text" name="region" placeholder="Region" value="{{ region }}">
+  <input type="date" name="date_from" value="{{ date_from }}">
+  <input type="date" name="date_to" value="{{ date_to }}">
+  <button type="submit">Filter</button>
+
+  <a href="{% url 'dashboard:kpi_download_csv' %}?{{ request.GET.urlencode }}">
+    Download CSV
+</a>
+
+<a href="{% url 'dashboard:kpi_download_excel' %}?{{ request.GET.urlencode }}">
+    Download Excel
+</a>
+
+</form>
+
+{# Debug سريع: شوف كم سجل وصل للتمبلت #}
+<p style="color:#777;">Records shown: {{ records|length }}</p>
+
+<table border="1" cellpadding="8" cellspacing="0" style="width:100%; background:white;">
+  <thead>
+    <tr>
+      <th>Region</th>
+      <th>Date</th>
+      <th>Download (Mbps)</th>
+      <th>Upload (Mbps)</th>
+      <th>Latency (ms)</th>
+      <th>Uptime (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if records %}
+      {% for r in records %}
+        <tr>
+          <td>{{ r.region }}</td>
+          <td>{{ r.kpi_date }}</td>
+          <td>{{ r.download_mbps }}</td>
+          <td>{{ r.upload_mbps }}</td>
+          <td>{{ r.latency_ms }}</td>
+          <td>{{ r.uptime_percent }}</td>
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr><td colspan="6" style="text-align:center;">No KPI data found.</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+{% endblock %}

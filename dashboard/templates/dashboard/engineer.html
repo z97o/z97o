@@ -1,0 +1,86 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NetInsight – Engineer Console</title>
+  <link rel="stylesheet" href="{% static 'omantel/css/base.css' %}">
+  <style>
+    body { font-family: system-ui, Arial; background:#0d1117; color:#e6edf3; margin:0; }
+    .wrap { padding:20px; max-width:1100px; margin:0 auto; }
+    h1 { font-size:1.4rem; margin:0 0 10px 0; }
+    table { width:100%; border-collapse:collapse; margin-top:6px; }
+    th, td { border-bottom:1px solid #30363d; padding:8px; text-align:left; vertical-align:middle; }
+    tr:hover { background:#161b22; }
+    .actions { display:flex; gap:8px; align-items:center; }
+    input[type="text"] { width:220px; background:#0d1117; color:#e6edf3; border:1px solid #30363d; border-radius:8px; padding:6px 8px; }
+    button, .btn { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid #30363d; background:#0d1117; color:#e6edf3; }
+    button:hover, .btn:hover { background:#161b22; }
+    .section { margin-top:26px; }
+    .muted { opacity:.7; }
+    .msg { margin:8px 0; }
+    .ok { color:#27ae60; }
+    .err { color:#ff6b6b; }
+  </style>
+</head>
+<body>
+  {% include "dashboard/_nav.html" %}
+  <div class="wrap">
+    <h1>Engineer Console – Tower Faults</h1>
+    <div class="msg">
+      {% for message in messages %}
+        <div class="{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tower ID</th><th>Region</th><th>Type</th><th>Tech</th><th>Power</th><th>Status</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in faults %}
+        <tr>
+          <td>{{ t.tower_id|default:t.id }}</td>
+          <td>{{ t.region }}</td>
+          <td>{{ t.tower_type|default:"—" }}</td>
+          <td>{{ t.technology|default:"—" }}</td>
+          <td>{{ t.power_source|default:"—" }}</td>
+          <td>{{ t.operational_status }}</td>
+          <td>
+            <form class="actions" method="post" action="{% url 'dashboard:resolve-tower' t.id %}">
+              {% csrf_token %}
+              <input type="text" name="note" placeholder="Optional note (e.g., replaced PSU)">
+              <button type="submit">Mark Resolved</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="muted">No active faults.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="section">
+      <h2 style="font-size:1.1rem; margin:0 0 8px 0;">Recent Fault Logs</h2>
+      <table>
+        <thead><tr><th>When</th><th>Tower</th><th>From</th><th>To</th><th>Note</th></tr></thead>
+        <tbody>
+          {% for log in recent_logs %}
+          <tr>
+            <td>{{ log.resolved_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ log.tower.tower_id|default:log.tower.id }}</td>
+            <td>{{ log.status_before }}</td>
+            <td>{{ log.status_after }}</td>
+            <td class="muted">{{ log.note|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="muted">No actions recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

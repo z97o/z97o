@@ -1,0 +1,163 @@
+/* ==========================================
+   OMANTEL DASHBOARD — ANIMATED FULL PAGE STYLE
+   ========================================== */
+
+:root {
+  --sidebar:#0f2431;
+  --bg:#f1e7d5;
+  --card:#f8eedc;
+  --ink:#2b2114;
+  --muted:#6c5a3b;
+  --accent:#9A7E55;
+  --accent-2:#d4c2a6;
+  --warn:#e6a34a;
+  --success:#2fa24a;
+  --danger:#e6482e;
+  --radius:16px;
+  --shadow:0 2px 6px rgba(0,0,0,.05);
+  --glow:0 0 12px rgba(154,126,85,.35);
+}
+
+/* Base */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  background:var(--bg);
+  font-family:Inter,system-ui,Segoe UI,Arial;
+  color:var(--ink);
+  overflow-x:hidden;
+}
+
+/* Smooth transitions everywhere */
+body, .card, .btn, .nav-link{
+  transition:all .25s ease-in-out;
+}
+
+/* Layout */
+.layout{
+  display:grid;
+  grid-template-columns:230px 1fr;
+  min-height:100vh;
+}
+
+/* Sidebar */
+.sidebar{
+  background:var(--sidebar);
+  color:#fff;
+  padding:20px 14px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+}
+.brand{
+  display:flex;align-items:center;gap:10px;margin-bottom:22px;
+}
+.brand img{width:100px;height:auto}
+.brand-sub{font-size:12px;opacity:.8}
+.nav{display:flex;flex-direction:column;width:100%;gap:8px;}
+.nav-link{
+  text-decoration:none;
+  color:#cbe1f3;
+  padding:9px 13px;
+  border-radius:10px;
+  font-size:15px;
+  display:flex;align-items:center;gap:8px;
+}
+.nav-link:hover,.nav-link.active{
+  background:#123244;color:#fff;transform:translateX(3px);
+}
+
+/* Main */
+.main{
+  display:flex;flex-direction:column;align-items:center;
+  padding:22px 28px 40px;gap:18px;width:100%;
+}
+
+/* Topbar */
+.topbar{
+  background:#e9d7ba;width:95%;max-width:1300px;
+  padding:12px 22px;border-radius:var(--radius);
+  display:flex;justify-content:space-between;align-items:center;
+  box-shadow:var(--shadow);
+  animation:fadeIn .6s ease;
+}
+.topbar h1{font-size:22px;font-weight:700}
+.btn{
+  background:#0f2431;color:#fff;padding:8px 16px;
+  border-radius:8px;font-weight:600;text-decoration:none;
+}
+.btn:hover{opacity:.9;box-shadow:var(--glow)}
+
+/* Cards */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:14px;width:95%;max-width:1300px;
+}
+.card{
+  background:var(--card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:14px 16px;
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  transform:translateY(0);
+}
+.card:hover{
+  transform:translateY(-4px);
+  box-shadow:var(--glow);
+}
+.card-title{font-weight:700;font-size:15px;margin-bottom:6px}
+.pill{display:flex;align-items:center;gap:10px}
+.pill-icon{font-size:20px}
+.pill-title{font-size:13px;color:var(--muted)}
+.pill-num{font-size:20px;font-weight:700;color:var(--ink)}
+.pill.warn{background:#f5e5c9;outline:2px dashed var(--warn)}
+
+/* Grid */
+.grid{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:14px;width:95%;max-width:1300px;
+}
+.grid .card{min-height:240px}
+.grid .tall{min-height:300px}
+.map-placeholder{
+  height:100%;border:2px dashed var(--accent-2);
+  border-radius:12px;display:flex;align-items:end;padding:10px;
+  color:var(--muted);font-size:13px;
+}
+.legend-row{
+  display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--muted);
+}
+.legend-item{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;background:#666}
+.dot-green{background:var(--success)}
+.dot-orange{background:#e68a2e}
+
+/* Footer */
+.footer{
+  margin-top:24px;font-size:12px;color:#8b7d6a;text-align:center;
+  width:95%;max-width:1300px;
+}
+
+/* Animations */
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(-10px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* Responsive */
+@media (max-width:1150px){
+  .layout{grid-template-columns:210px 1fr}
+  .main{padding:16px}
+  .grid{grid-template-columns:1fr}
+}
+@media (max-width:780px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{
+    flex-direction:row;align-items:center;justify-content:space-between;
+    padding:10px 16px;
+  }
+  .nav{flex-direction:row;gap:10px}
+  .nav-link{padding:6px 10px;font-size:14px}
+}

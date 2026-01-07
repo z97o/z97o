@@ -1,0 +1,60 @@
+:root { --blue:#004C97; --orange:#FF8C00; --ink:#1c2733; --muted:#6b7785; --bg:#f6f8fb; --card:#fff; --shadow:0 10px 30px rgba(0,0,0,.08); }
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+/* Topbar */
+.topbar{position:sticky;top:0;z-index:40;background:linear-gradient(90deg,var(--blue),#1966bf);color:#fff;box-shadow:var(--shadow);height:54px;display:flex;align-items:center}
+.topbar-inner{width:100%;max-width:1200px;margin:0 auto;padding:0 16px;display:flex;align-items:center;gap:14px}
+.burger{border:none;background:#ffffff22;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;transition:transform .18s ease}
+.burger:active{transform:scale(.96)}
+.brand{display:flex;align-items:center;gap:8px;text-decoration:none;color:#fff;font-weight:800;letter-spacing:.3px;line-height:1}
+.brand .logo{height:30px;width:auto;display:block;object-fit:contain;vertical-align:middle}
+.brand .brand-text{white-space:nowrap;font-size:17px}
+.ver{margin-left:auto;opacity:.85;font-size:13px}
+/* Layout */
+.layout{display:grid;grid-template-columns:260px 1fr;gap:0}
+@media (max-width:1024px){.layout{grid-template-columns:1fr}}
+/* Sidebar */
+.sidebar{position:sticky;top:54px;height:calc(100dvh - 54px);background:#0f2440;color:#d6e1f2;box-shadow:var(--shadow);padding:12px;transform:translateX(0);transition:transform .25s ease-in-out}
+.sidebar.collapsed{transform:translateX(-100%)}
+.sb-title{font-weight:800;font-size:12px;color:#9fb4d6;margin:8px;text-transform:uppercase}
+.sb-link{display:block;padding:10px 12px;margin:6px;border-radius:12px;color:#d6e1f2;text-decoration:none;border:1px solid #ffffff10;transition:background .2s ease,transform .06s ease,box-shadow .18s ease;will-change:transform}
+.sb-link:hover{background:#ffffff10;transform:translateX(2px)}
+.sb-link.active{background:#15345f;border-color:#2b66da}
+/* Main */
+.main{padding:18px}
+.card{background:var(--card);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+.page-title{margin:0 0 8px;font-weight:700}
+.lead{color:var(--muted);font-size:15px}
+.tour{display:flex;gap:8px;margin-top:14px}
+.btn{position:relative;border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;overflow:hidden;transition:transform .08s ease,filter .15s ease,box-shadow .18s ease}
+.btn:hover{filter:brightness(1.02);box-shadow:0 8px 22px rgba(0,0,0,.10)}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-next{background:var(--orange);color:#111}
+.btn-ghost{background:#eef3ff;color:var(--blue)}
+/* Tables */
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{padding:10px;text-align:left;border-bottom:1px solid #eee}
+th{background:#f3f6fa;color:var(--blue);text-transform:uppercase;font-size:13px;letter-spacing:.3px}
+tr:hover td{background:#fafcff}
+/* KPI tiles */
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:900px){.tiles{grid-template-columns:1fr}}
+.tile{background:#f9fbff;border:1px solid #e8f0fb;border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.tile .k-title{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.tile .k-value{font-weight:800;font-size:24px}
+/* Hover lift */
+.hover-lift{transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease}
+.hover-lift:hover{transform:translateY(-3px);box-shadow:0 14px 38px rgba(0,0,0,.12)}
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+[data-animate]{opacity:0}.is-in{animation:fadeUp .45s ease forwards}
+/* Ripple for buttons */
+.btn .ripple{position:absolute;border-radius:50%;pointer-events:none;transform:scale(0);background:rgba(255,255,255,.6);animation:ripple .6s ease-out forwards;mix-blend-mode:screen}
+@keyframes ripple{to{transform:scale(18);opacity:0}}
+/* Embeds (Power BI / Chart.js) */
+.embed{position:relative;width:100%;padding-top:56.25%}
+.embed>iframe,.embed>canvas{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:16px;background:#fff}
+/* Brand responsive tweaks */
+@media (max-width:420px){.brand .brand-text{display:none}}
+@media (prefers-reduced-motion:reduce){.brand .logo{transition:none!important}}
