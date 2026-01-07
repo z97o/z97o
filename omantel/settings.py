@@ -19,7 +19,7 @@ SECRET_KEY = "django-insecure-CHANGE_THIS_TO_YOUR_SECRET_KEY"
 DEBUG = False
 
 # Hosts allowed to access the app
-ALLOWED_HOSTS = ['.onrender.com']
+ALLOWED_HOSTS = [".onrender.com"]
 
 # -----------------------------
 # INSTALLED APPS
@@ -91,7 +91,9 @@ if DB_HOST:
 
         "OPTIONS": {"charset": "utf8mb4"},
     }
-}if DB_HOST:
+}
+if DB_HOST:
+    # Production (MySQL)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
@@ -103,6 +105,7 @@ if DB_HOST:
         }
     }
 else:
+    # Fallback (SQLite) – works on Render now
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
