@@ -79,21 +79,8 @@ WSGI_APPLICATION = "omantel.wsgi.application"
 # -----------------------------
 # Default: SQLite (easy for local dev)
 DB_HOST = os.getenv("DB_HOST")
-if DB_HOST:
-    DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "omantel",
-        "USER": "django",
-        "PASSWORD": "Django@12345",
-        "HOST": "localhost",
-        "PORT": "3307",
 
-        "OPTIONS": {"charset": "utf8mb4"},
-    }
-}
 if DB_HOST:
-    # Production (MySQL)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
@@ -105,15 +92,12 @@ if DB_HOST:
         }
     }
 else:
-    # Fallback (SQLite) – works on Render now
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
-
-
 
 # -----------------------------
 # PASSWORD VALIDATION
