@@ -19,7 +19,7 @@ SECRET_KEY = "django-insecure-CHANGE_THIS_TO_YOUR_SECRET_KEY"
 DEBUG = True  # ✅ Use True for development; switch to False in production
 
 # Hosts allowed to access the app
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = ['.onrender.com']
 
 # -----------------------------
 # INSTALLED APPS
