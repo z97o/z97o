@@ -9,3 +9,4 @@ staticfiles/
 .DS_Store
 data*.json
 *.sqlite3
+regions.csv
