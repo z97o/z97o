@@ -13,3 +13,4 @@ dj-database-url
 pandas
 openpyxl
 numpy
+pandas
