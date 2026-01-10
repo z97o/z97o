@@ -6,127 +6,151 @@ from django.apps import apps
 BASE_DIR = Path(__file__).resolve().parents[3]
 EXCEL_PATH = BASE_DIR / "data" / "NetInsight_Large_Detailed_Dataset.xlsx"
 
+def model_field_names(Model):
+    return {f.name for f in Model._meta.get_fields() if hasattr(f, "attname")}
+
+def safe_str(x):
+    if pd.isna(x):
+        return ""
+    return str(x).strip()
+
+def to_int(x):
+    try:
+        if pd.isna(x): 
+            return None
+        return int(float(x))
+    except Exception:
+        return None
+
+def to_float(x):
+    try:
+        if pd.isna(x): 
+            return None
+        return float(x)
+    except Exception:
+        return None
+
+def to_date(x):
+    d = pd.to_datetime(x, errors="coerce")
+    return d.date() if pd.notna(d) else None
+
 class Command(BaseCommand):
-    help = "Seed demo data from Excel sheets (Infrastructure, Complaints, Usage, Geography) if DB is empty."
+    help = "Seed database from Excel sheets safely (won't crash if some fields differ)."
 
     def handle(self, *args, **options):
         if not EXCEL_PATH.exists():
-            raise FileNotFoundError(f"Excel file not found: {EXCEL_PATH}")
+            self.stdout.write(self.style.ERROR(f"Excel not found: {EXCEL_PATH}"))
+            return
 
-        # Get models safely (no hard import)
+        xl = pd.ExcelFile(EXCEL_PATH)
+
+        # --- Models (from your DB tables: dashboard_tower, dashboard_complaint, dashboard_datausage, dashboard_geoclimate)
         Tower = apps.get_model("dashboard", "Tower")
         Complaint = apps.get_model("dashboard", "Complaint")
         DataUsage = apps.get_model("dashboard", "DataUsage")
         GeoClimate = apps.get_model("dashboard", "GeoClimate")
 
-        xl = pd.ExcelFile(EXCEL_PATH)
-
-        # -------------------------
         # 1) Infrastructure -> Tower
-        # -------------------------
-        if Tower.objects.count() == 0 and "Infrastructure" in xl.sheet_names:
+        if "Infrastructure" in xl.sheet_names and Tower.objects.count() == 0:
             df = xl.parse("Infrastructure")
-            df.columns = [c.strip() for c in df.columns]
+            df.columns = [str(c).strip() for c in df.columns]
 
+            allowed = model_field_names(Tower)
             objs = []
             for _, r in df.iterrows():
-                install_date = pd.to_datetime(r.get("Installation Date"), errors="coerce")
-                objs.append(
-                    Tower(
-                        tower_id=str(r.get("Tower ID")).strip(),
-                        region=str(r.get("Region")).strip(),
-                        installation_date=install_date.date() if pd.notna(install_date) else None,
-                        tower_type=str(r.get("Tower Type")).strip(),
-                        technology=str(r.get("Technology")).strip(),
-                        power_source=str(r.get("Power Source")).strip(),
-                        operational_status=str(r.get("Operational Status")).strip(),
-                        max_capacity_users=int(r.get("Max Capacity (Users)")) if pd.notna(r.get("Max Capacity (Users)")) else None,
-                    )
-                )
+                data = {
+                    "tower_id": safe_str(r.get("Tower ID")),
+                    "region": safe_str(r.get("Region")),
+                    "installation_date": to_date(r.get("Installation Date")),
+                    "tower_type": safe_str(r.get("Tower Type")),
+                    "technology": safe_str(r.get("Technology")),
+                    "power_source": safe_str(r.get("Power Source")),
+                    "operational_status": safe_str(r.get("Operational Status")),
+                    "max_capacity_users": to_int(r.get("Max Capacity (Users)")),
+                }
+                # Keep only fields that exist in model
+                data = {k: v for k, v in data.items() if k in allowed and v not in ("", None)}
+                objs.append(Tower(**data))
 
             Tower.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
-            self.stdout.write(self.style.SUCCESS(f"Seeded {len(objs)} towers from Infrastructure sheet."))
+            self.stdout.write(self.style.SUCCESS(f"Seeded towers: {len(objs)}"))
         else:
-            self.stdout.write(self.style.WARNING("Towers table already has data (or sheet missing). Skipping towers."))
+            self.stdout.write(self.style.WARNING("Skip towers (already seeded or sheet missing)."))
 
-        # ------------------------------
         # 2) Customer_Complaints -> Complaint
-        # ------------------------------
-        if Complaint.objects.count() == 0 and "Customer_Complaints" in xl.sheet_names:
+        if "Customer_Complaints" in xl.sheet_names and Complaint.objects.count() == 0:
             df = xl.parse("Customer_Complaints")
-            df.columns = [c.strip() for c in df.columns]
+            df.columns = [str(c).strip() for c in df.columns]
 
+            allowed = model_field_names(Complaint)
             objs = []
             for _, r in df.iterrows():
-                d = pd.to_datetime(r.get("Date"), errors="coerce")
-                objs.append(
-                    Complaint(
-                        complaint_id=str(r.get("Complaint ID")).strip(),
-                        date=d.date() if pd.notna(d) else None,
-                        region=str(r.get("Region")).strip(),
-                        device_type=str(r.get("Device Type")).strip(),
-                        complaint_type=str(r.get("Complaint Type")).strip(),
-                        duration_hours=int(r.get("Duration of Issue (Hours)")) if pd.notna(r.get("Duration of Issue (Hours)")) else None,
-                        impact_level=str(r.get("Impact Level")).strip(),
-                        reported_via=str(r.get("Reported via")).strip(),
-                        status=str(r.get("Status")).strip(),
-                    )
-                )
+                data = {
+                    "complaint_id": safe_str(r.get("Complaint ID")),
+                    "date": to_date(r.get("Date")),
+                    "region": safe_str(r.get("Region")),
+                    "device_type": safe_str(r.get("Device Type")),
+                    "complaint_type": safe_str(r.get("Complaint Type")),
+                    "duration_hours": to_int(r.get("Duration of Issue (Hours)")),
+                    "impact_level": safe_str(r.get("Impact Level")),
+                    "reported_via": safe_str(r.get("Reported via")),
+                    "status": safe_str(r.get("Status")),
+                }
+                data = {k: v for k, v in data.items() if k in allowed and v not in ("", None)}
+                objs.append(Complaint(**data))
 
             Complaint.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
-            self.stdout.write(self.style.SUCCESS(f"Seeded {len(objs)} complaints from Customer_Complaints sheet."))
+            self.stdout.write(self.style.SUCCESS(f"Seeded complaints: {len(objs)}"))
         else:
-            self.stdout.write(self.style.WARNING("Complaints table already has data (or sheet missing). Skipping complaints."))
+            self.stdout.write(self.style.WARNING("Skip complaints (already seeded or sheet missing)."))
 
-        # -------------------------
         # 3) User_Base_Usage -> DataUsage
-        # -------------------------
-        if DataUsage.objects.count() == 0 and "User_Base_Usage" in xl.sheet_names:
+        if "User_Base_Usage" in xl.sheet_names and DataUsage.objects.count() == 0:
             df = xl.parse("User_Base_Usage")
-            df.columns = [c.strip() for c in df.columns]
+            df.columns = [str(c).strip() for c in df.columns]
 
+            allowed = model_field_names(DataUsage)
             objs = []
             for _, r in df.iterrows():
-                objs.append(
-                    DataUsage(
-                        region=str(r.get("Region")).strip(),
-                        residential_users=int(r.get("Residential Users")) if pd.notna(r.get("Residential Users")) else 0,
-                        business_users=int(r.get("Business Users")) if pd.notna(r.get("Business Users")) else 0,
-                        avg_data_per_user_gb=float(r.get("Avg Data/User (GB/day)")) if pd.notna(r.get("Avg Data/User (GB/day)")) else 0.0,
-                        peak_usage_hours=str(r.get("Peak Usage Hours")).strip(),
-                        age_group_dominant=str(r.get("Age Group Dominant")).strip(),
-                        usage_pattern=str(r.get("Usage Pattern")).strip(),
-                    )
-                )
+                data = {
+                    "region": safe_str(r.get("Region")),
+                    "residential_users": to_int(r.get("Residential Users")),
+                    "business_users": to_int(r.get("Business Users")),
+                    "avg_data_per_user_gb": to_float(r.get("Avg Data/User (GB/day)")),
+                    "peak_usage_hours": safe_str(r.get("Peak Usage Hours")),
+                    "age_group_dominant": safe_str(r.get("Age Group Dominant")),
+                    "usage_pattern": safe_str(r.get("Usage Pattern")),
+                }
+                data = {k: v for k, v in data.items() if k in allowed and v not in ("", None)}
+                objs.append(DataUsage(**data))
 
             DataUsage.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
-            self.stdout.write(self.style.SUCCESS(f"Seeded {len(objs)} usage rows from User_Base_Usage sheet."))
+            self.stdout.write(self.style.SUCCESS(f"Seeded usage: {len(objs)}"))
         else:
-            self.stdout.write(self.style.WARNING("DataUsage table already has data (or sheet missing). Skipping usage."))
+            self.stdout.write(self.style.WARNING("Skip usage (already seeded or sheet missing)."))
 
-        # -------------------------
         # 4) Geography_Climate -> GeoClimate
-        # -------------------------
-        if GeoClimate.objects.count() == 0 and "Geography_Climate" in xl.sheet_names:
+        if "Geography_Climate" in xl.sheet_names and GeoClimate.objects.count() == 0:
             df = xl.parse("Geography_Climate")
-            df.columns = [c.strip() for c in df.columns]
+            df.columns = [str(c).strip() for c in df.columns]
 
+            allowed = model_field_names(GeoClimate)
             objs = []
             for _, r in df.iterrows():
-                objs.append(
-                    GeoClimate(
-                        region=str(r.get("Region")).strip(),
-                        terrain_type=str(r.get("Terrain Type")).strip(),
-                        avg_temperature=float(r.get("Avg Temperature (°C)")) if pd.notna(r.get("Avg Temperature (°C)")) else None,
-                        avg_humidity=float(r.get("Avg Humidity (%)")) if pd.notna(r.get("Avg Humidity (%)")) else None,
-                        rainy_season_effect=str(r.get("Rainy Season Effect")).strip(),
-                        signal_interference_level=str(r.get("Signal Interference Level")).strip(),
-                    )
-                )
+                data = {
+                    "region": safe_str(r.get("Region")),
+                    "terrain_type": safe_str(r.get("Terrain Type")),
+                    "avg_temperature": to_float(r.get("Avg Temperature (°C)")),
+                    "avg_humidity": to_float(r.get("Avg Humidity (%)")),
+                    "rainy_season_effect": safe_str(r.get("Rainy Season Effect")),
+                    "signal_interference_level": safe_str(r.get("Signal Interference Level")),
+                }
+                data = {k: v for k, v in data.items() if k in allowed and v not in ("", None)}
+                objs.append(GeoClimate(**data))
 
             GeoClimate.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
-            self.stdout.write(self.style.SUCCESS(f"Seeded {len(objs)} climate rows from Geography_Climate sheet."))
+            self.stdout.write(self.style.SUCCESS(f"Seeded climate: {len(objs)}"))
         else:
-            self.stdout.write(self.style.WARNING("GeoClimate table already has data (or sheet missing). Skipping climate."))
+            self.stdout.write(self.style.WARNING("Skip climate (already seeded or sheet missing)."))
 
-        self.stdout.write(self.style.SUCCESS("✅ Seeding from Excel finished."))
+        self.stdout.write(self.style.SUCCESS("✅ Seed finished (safe mode)."))
