@@ -1,38 +1,164 @@
 from pathlib import Path
 import pandas as pd
+import random
 from django.core.management.base import BaseCommand
 from django.apps import apps
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 EXCEL_PATH = BASE_DIR / "data" / "NetInsight_Large_Detailed_Dataset.xlsx"
+REGIONS_CSV_PATH = BASE_DIR / "data" / "regions.csv"
+
 
 def model_field_names(Model):
     return {f.name for f in Model._meta.get_fields() if hasattr(f, "attname")}
 
+
 def safe_str(x):
-    if pd.isna(x):
+    if x is None or pd.isna(x):
         return ""
     return str(x).strip()
 
+
 def to_int(x):
     try:
-        if pd.isna(x): 
+        if x is None or pd.isna(x):
             return None
-        return int(float(x))
+        s = str(x).strip()
+        if s == "":
+            return None
+        return int(float(s))
     except Exception:
         return None
 
+
 def to_float(x):
+    """
+    Robust float converter:
+    - handles None/NaN/empty
+    - handles Arabic comma (،)
+    - handles comma as decimal separator
+    """
     try:
-        if pd.isna(x): 
+        if x is None or pd.isna(x):
             return None
-        return float(x)
+        s = str(x).strip()
+        if s == "":
+            return None
+        s = s.replace("،", ".").replace(",", ".")
+        return float(s)
     except Exception:
         return None
+
 
 def to_date(x):
     d = pd.to_datetime(x, errors="coerce")
     return d.date() if pd.notna(d) else None
+
+
+# ✅ City -> Big region name in regions.csv
+# Based on your dataset regions: Seeb, Sohar, Nizwa, Salalah, Duqm, Ibri, Barka, Sur, Rustaq, Buraimi
+CITY_TO_REGION_NAME = {
+    "Seeb": "Muscat North",
+    "Barka": "Muscat South",
+    "Rustaq": "Muscat South",
+    "Salalah": "Dhofar",
+    "Sur": "Sharqiya",
+    # If you want: you can map more later
+    # "Duqm": "Sharqiya",  # optional (or leave as fallback)
+    # "Sohar": "Muscat North",  # not accurate but optional
+}
+
+
+# ✅ fallback centers (for cities not present in regions.csv)
+REGION_CENTERS_FALLBACK = {
+    "Seeb": (23.6800, 58.1800),
+    "Sohar": (24.3419, 56.7290),
+    "Nizwa": (22.9333, 57.5333),
+    "Salalah": (17.0199, 54.0897),
+    "Duqm": (19.6666, 57.7000),
+    "Ibri": (23.2257, 56.5157),
+    "Barka": (23.6766, 57.8861),
+    "Sur": (22.5667, 59.5289),
+    "Rustaq": (23.3908, 57.4244),
+    "Buraimi": (24.2500, 55.7900),
+    "Muscat": (23.5880, 58.3829),
+}
+
+
+def _norm_name(s: str) -> str:
+    return safe_str(s).lower().replace("_", " ").strip()
+
+
+def load_region_centers_from_csv():
+    """
+    regions.csv columns: code, name, latitude, longitude
+    returns:
+      centers_exact: { "muscat north": (lat,lng), ... }
+      centers_list:  [("muscat north",(lat,lng)), ...]
+    """
+    if not REGIONS_CSV_PATH.exists():
+        return {}, []
+
+    df = pd.read_csv(REGIONS_CSV_PATH)
+    centers_exact = {}
+    centers_list = []
+
+    for _, r in df.iterrows():
+        name = _norm_name(r.get("name"))
+        lat = to_float(r.get("latitude"))
+        lng = to_float(r.get("longitude"))
+        if name and lat is not None and lng is not None:
+            centers_exact[name] = (lat, lng)
+            centers_list.append((name, (lat, lng)))
+
+    return centers_exact, centers_list
+
+
+def pick_region_center(region_raw: str, centers_exact: dict, centers_list: list):
+    """
+    Pick center coordinates for a city/region string from Excel.
+
+    Strategy:
+    0) map city -> big region (Muscat North/South, Dhofar, Sharqiya)
+    1) exact match in CSV
+    2) substring match in CSV
+    3) fallback city centers
+    4) default Muscat
+    """
+    # 0) mapping city -> big region name
+    mapped = CITY_TO_REGION_NAME.get(region_raw)
+    if mapped:
+        region_raw = mapped
+
+    rnorm = _norm_name(region_raw)
+    if not rnorm:
+        return REGION_CENTERS_FALLBACK["Muscat"]
+
+    # 1) exact (CSV)
+    if rnorm in centers_exact:
+        return centers_exact[rnorm]
+
+    # 2) fuzzy substring (CSV)
+    for name, coords in centers_list:
+        if rnorm in name or name in rnorm:
+            return coords
+
+    # 3) fallback by original city name (Excel)
+    if region_raw in REGION_CENTERS_FALLBACK:
+        return REGION_CENTERS_FALLBACK[region_raw]
+
+    # also try original before mapping
+    # (useful when mapped name isn't in csv)
+    return REGION_CENTERS_FALLBACK.get(region_raw, REGION_CENTERS_FALLBACK["Muscat"])
+
+
+def spread_coords(center_lat, center_lng):
+    """small random spread so towers don't overlap exactly"""
+    return (
+        center_lat + random.uniform(-0.06, 0.06),
+        center_lng + random.uniform(-0.06, 0.06),
+    )
+
 
 class Command(BaseCommand):
     help = "Seed database from Excel sheets safely (won't crash if some fields differ)."
@@ -44,7 +170,10 @@ class Command(BaseCommand):
 
         xl = pd.ExcelFile(EXCEL_PATH)
 
-        # --- Models (from your DB tables: dashboard_tower, dashboard_complaint, dashboard_datausage, dashboard_geoclimate)
+        # ✅ load big-region centers from CSV
+        centers_exact, centers_list = load_region_centers_from_csv()
+        self.stdout.write(self.style.SUCCESS(f"Region centers loaded from CSV: {len(centers_exact)}"))
+
         Tower = apps.get_model("dashboard", "Tower")
         Complaint = apps.get_model("dashboard", "Complaint")
         DataUsage = apps.get_model("dashboard", "DataUsage")
@@ -57,18 +186,40 @@ class Command(BaseCommand):
 
             allowed = model_field_names(Tower)
             objs = []
+
             for _, r in df.iterrows():
+                region = safe_str(r.get("Region"))
+
+                # Try to read real coords if they ever get added to Excel
+                lat = to_float(r.get("Latitude") or r.get("latitude") or r.get("LAT") or r.get("lat"))
+                lng = to_float(
+                    r.get("Longitude")
+                    or r.get("longitude")
+                    or r.get("LNG")
+                    or r.get("lng")
+                    or r.get("Lon")
+                    or r.get("lon")
+                    or r.get("Long")
+                )
+
+                # If Excel has no coords -> use CSV big region center + spread
+                if lat is None or lng is None:
+                    base_lat, base_lng = pick_region_center(region, centers_exact, centers_list)
+                    lat, lng = spread_coords(base_lat, base_lng)
+
                 data = {
                     "tower_id": safe_str(r.get("Tower ID")),
-                    "region": safe_str(r.get("Region")),
+                    "region": region,
                     "installation_date": to_date(r.get("Installation Date")),
                     "tower_type": safe_str(r.get("Tower Type")),
                     "technology": safe_str(r.get("Technology")),
                     "power_source": safe_str(r.get("Power Source")),
                     "operational_status": safe_str(r.get("Operational Status")),
                     "max_capacity_users": to_int(r.get("Max Capacity (Users)")),
+                    "latitude": lat,
+                    "longitude": lng,
                 }
-                # Keep only fields that exist in model
+
                 data = {k: v for k, v in data.items() if k in allowed and v not in ("", None)}
                 objs.append(Tower(**data))
 
