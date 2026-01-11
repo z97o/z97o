@@ -180,56 +180,70 @@ class Command(BaseCommand):
         GeoClimate = apps.get_model("dashboard", "GeoClimate")
 
         # 1) Infrastructure -> Tower
-        if "Infrastructure" in xl.sheet_names and Tower.objects.count() == 0:
-            df = xl.parse("Infrastructure")
-            df.columns = [str(c).strip() for c in df.columns]
+        # 1) Infrastructure -> Tower
+needs_seed = (
+    Tower.objects.count() == 0
+    or Tower.objects.filter(latitude__isnull=True).exists()
+    or Tower.objects.filter(longitude__isnull=True).exists()
+)
 
-            allowed = model_field_names(Tower)
-            objs = []
+if "Infrastructure" in xl.sheet_names and needs_seed:
+    df = xl.parse("Infrastructure")
+    df.columns = [str(c).strip() for c in df.columns]
 
-            for _, r in df.iterrows():
-                region = safe_str(r.get("Region"))
+    centers_exact, centers_list = load_region_centers_from_csv()
 
-                # Try to read real coords if they ever get added to Excel
-                lat = to_float(r.get("Latitude") or r.get("latitude") or r.get("LAT") or r.get("lat"))
-                lng = to_float(
-                    r.get("Longitude")
-                    or r.get("longitude")
-                    or r.get("LNG")
-                    or r.get("lng")
-                    or r.get("Lon")
-                    or r.get("lon")
-                    or r.get("Long")
-                )
+    updated = 0
+    created = 0
 
-                # If Excel has no coords -> use CSV big region center + spread
-                if lat is None or lng is None:
-                    base_lat, base_lng = pick_region_center(region, centers_exact, centers_list)
-                    lat, lng = spread_coords(base_lat, base_lng)
+    for _, r in df.iterrows():
+        region = safe_str(r.get("Region"))
 
-                data = {
-                    "tower_id": safe_str(r.get("Tower ID")),
-                    "region": region,
-                    "installation_date": to_date(r.get("Installation Date")),
-                    "tower_type": safe_str(r.get("Tower Type")),
-                    "technology": safe_str(r.get("Technology")),
-                    "power_source": safe_str(r.get("Power Source")),
-                    "operational_status": safe_str(r.get("Operational Status")),
-                    "max_capacity_users": to_int(r.get("Max Capacity (Users)")),
-                    "latitude": lat,
-                    "longitude": lng,
-                }
+        lat = to_float(r.get("Latitude") or r.get("latitude") or r.get("LAT") or r.get("lat"))
+        lng = to_float(
+            r.get("Longitude")
+            or r.get("longitude")
+            or r.get("LNG")
+            or r.get("lng")
+            or r.get("Lon")
+            or r.get("lon")
+            or r.get("Long")
+        )
 
-                data = {k: v for k, v in data.items() if k in allowed and v not in ("", None)}
-                objs.append(Tower(**data))
+        if lat is None or lng is None:
+            base_lat, base_lng = pick_region_center(region, centers_exact, centers_list)
+            lat, lng = spread_coords(base_lat, base_lng)
 
-            Tower.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
-            self.stdout.write(self.style.SUCCESS(f"Seeded towers: {len(objs)}"))
+        tower_id = safe_str(r.get("Tower ID"))
+        defaults = {
+            "region": region,
+            "installation_date": to_date(r.get("Installation Date")),
+            "tower_type": safe_str(r.get("Tower Type")),
+            "technology": safe_str(r.get("Technology")),
+            "power_source": safe_str(r.get("Power Source")),
+            "operational_status": safe_str(r.get("Operational Status")),
+            "max_capacity_users": to_int(r.get("Max Capacity (Users)")),
+            "latitude": lat,
+            "longitude": lng,
+        }
+
+        obj, was_created = Tower.objects.update_or_create(
+            tower_id=tower_id,
+            defaults=defaults
+        )
+
+        if was_created:
+            created += 1
         else:
-            self.stdout.write(self.style.WARNING("Skip towers (already seeded or sheet missing)."))
+            updated += 1
+
+    self.stdout.write(self.style.SUCCESS(f"Towers created: {created}, updated: {updated}"))
+else:
+    self.stdout.write(self.style.WARNING("Skip towers (no need or sheet missing)."))
+
 
         # 2) Customer_Complaints -> Complaint
-        if "Customer_Complaints" in xl.sheet_names and Complaint.objects.count() == 0:
+    if "Customer_Complaints" in xl.sheet_names and Complaint.objects.count() == 0:
             df = xl.parse("Customer_Complaints")
             df.columns = [str(c).strip() for c in df.columns]
 
