@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: omantel-netinsight
+    env: python
+    plan: free
+
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py migrate
+
+    startCommand: >
+      bash -lc "python manage.py seed_from_excel || true;
+      gunicorn omantel.wsgi:application"
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
