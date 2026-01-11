@@ -298,6 +298,24 @@ def region_insights_view(request):
 # ─────────────────────────────
 # TOWER MAP VIEW
 # ─────────────────────────────
+def _safe_float(x):
+    """
+    يحول أي قيمة لرقم float بأمان:
+    - يتعامل مع None / فراغ
+    - يتعامل مع "23,588" أو "23.588" أو "23،588"
+    """
+    if x is None:
+        return None
+    s = str(x).strip()
+    if s == "":
+        return None
+    s = s.replace("،", ".").replace(",", ".")
+    try:
+        return float(s)
+    except Exception:
+        return None
+
+
 @login_required
 def tower_map_view(request):
     """
@@ -307,30 +325,57 @@ def tower_map_view(request):
     - JSON includes tower PK id for events
     """
 
-    towers_qs = (
-        Tower.objects
-        .exclude(latitude__isnull=True)
-        .exclude(longitude__isnull=True)
-    )
-
-    total_towers = towers_qs.count()
-    active_count = towers_qs.filter(operational_status__iexact="Active").count()
-    maintenance_count = towers_qs.filter(operational_status__iexact="Maintenance").count()
-    down_count = towers_qs.filter(operational_status__iexact="Down").count()
+    # لا نعتمد فقط على exclude(null) لأن أحيانًا تكون القيم نصوص/فراغات
+    towers_qs = Tower.objects.all()
 
     towers = []
+    active_count = 0
+    maintenance_count = 0
+    down_count = 0
+
     for t in towers_qs:
+        lat = _safe_float(t.latitude)
+        lng = _safe_float(t.longitude)
+
+        # تجاهل أي tower ما عنده coords صحيحة
+        if lat is None or lng is None:
+            continue
+
+        # تجاهل 0,0 (كثير تصير لما تكون البيانات ناقصة)
+        if lat == 0 or lng == 0:
+            continue
+
+        # تحقق من نطاق الإحداثيات (عشان ما يروح marker مكان بعيد)
+        if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+            continue
+
+        status = (t.operational_status or "Unknown").strip()
+
+        # تحديث العدادات بعد التصفية الفعلية
+        if status.lower() == "active":
+            active_count += 1
+        elif status.lower() == "maintenance":
+            maintenance_count += 1
+        elif status.lower() == "down":
+            down_count += 1
+
         towers.append({
-            "id": t.id,  # ✅ مهم جداً عشان sendTowerEvent يشتغل
+            "id": t.id,
             "tower_id": t.tower_id,
             "region": t.region,
-            "lat": float(t.latitude),
-            "lon": float(t.longitude),  # ✅ template يستخدم lon
+            "lat": lat,
+
+            # ✨ أرسل الاثنين (lon و lng) عشان أي تمبلت/JS يشتغل
+            "lon": lng,
+            "lng": lng,
+
             "technology": t.technology or "-",
             "power_source": t.power_source or "-",
-            "status": t.operational_status or "Unknown",
-            "capacity": int(t.max_capacity_users or 0),  # ✅ template يستخدم capacity
+            "status": status,
+            "capacity": int(t.max_capacity_users or 0),
         })
+
+    total_towers = len(towers)
 
     context = {
         "towers_json": json.dumps(towers),
