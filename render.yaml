@@ -9,8 +9,18 @@ services:
       python manage.py migrate
 
     startCommand: >
-      bash -lc "python manage.py seed_from_excel || true;
-      gunicorn omantel.wsgi:application"
+    bash -lc "
+    echo '=== START COMMAND RUNNING ===';
+    pwd;
+    ls -la;
+    echo '=== LIST data/ ===';
+    ls -la data || true;
+    echo '=== RUN SEED ===';
+    python manage.py seed_from_excel --verbosity 2;
+    echo '=== SEED DONE ===';
+    gunicorn omantel.wsgi:application
+    "
+
 
     envVars:
       - key: PYTHON_VERSION
