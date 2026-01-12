@@ -175,11 +175,10 @@ class Command(BaseCommand):
             Tower.objects.count() == 0
             or Tower.objects.filter(latitude__isnull=True).exists()
             or Tower.objects.filter(longitude__isnull=True).exists()
-            or Tower.objects.filter(latitude="").exists()
-            or Tower.objects.filter(longitude="").exists()
             or Tower.objects.filter(latitude=0).exists()
             or Tower.objects.filter(longitude=0).exists()
         )
+
 
         if "Infrastructure" in xl.sheet_names and needs_seed:
             df = xl.parse("Infrastructure")
