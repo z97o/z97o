@@ -13,7 +13,7 @@ services:
       python manage.py collectstatic --noinput
       python manage.py seed_from_excel --verbosity 2 || echo "Seed completed or skipped"
 
-    startCommand: gunicorn omantel.wsgi:application
+    startCommand: python -m gunicorn omantel.wsgi:application --bind 0.0.0.0:$PORT
 
     envVars:
       - key: PYTHON_VERSION
