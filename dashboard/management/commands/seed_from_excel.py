@@ -56,18 +56,13 @@ def to_date(x):
 
 
 # ✅ City -> Big region name in regions.csv
-# Based on your dataset regions: Seeb, Sohar, Nizwa, Salalah, Duqm, Ibri, Barka, Sur, Rustaq, Buraimi
 CITY_TO_REGION_NAME = {
     "Seeb": "Muscat North",
     "Barka": "Muscat South",
     "Rustaq": "Muscat South",
     "Salalah": "Dhofar",
     "Sur": "Sharqiya",
-    # If you want: you can map more later
-    # "Duqm": "Sharqiya",  # optional (or leave as fallback)
-    # "Sohar": "Muscat North",  # not accurate but optional
 }
-
 
 # ✅ fallback centers (for cities not present in regions.csv)
 REGION_CENTERS_FALLBACK = {
@@ -125,7 +120,6 @@ def pick_region_center(region_raw: str, centers_exact: dict, centers_list: list)
     3) fallback city centers
     4) default Muscat
     """
-    # 0) mapping city -> big region name
     mapped = CITY_TO_REGION_NAME.get(region_raw)
     if mapped:
         region_raw = mapped
@@ -134,21 +128,16 @@ def pick_region_center(region_raw: str, centers_exact: dict, centers_list: list)
     if not rnorm:
         return REGION_CENTERS_FALLBACK["Muscat"]
 
-    # 1) exact (CSV)
     if rnorm in centers_exact:
         return centers_exact[rnorm]
 
-    # 2) fuzzy substring (CSV)
     for name, coords in centers_list:
         if rnorm in name or name in rnorm:
             return coords
 
-    # 3) fallback by original city name (Excel)
     if region_raw in REGION_CENTERS_FALLBACK:
         return REGION_CENTERS_FALLBACK[region_raw]
 
-    # also try original before mapping
-    # (useful when mapped name isn't in csv)
     return REGION_CENTERS_FALLBACK.get(region_raw, REGION_CENTERS_FALLBACK["Muscat"])
 
 
@@ -179,71 +168,81 @@ class Command(BaseCommand):
         DataUsage = apps.get_model("dashboard", "DataUsage")
         GeoClimate = apps.get_model("dashboard", "GeoClimate")
 
+        # =========================
         # 1) Infrastructure -> Tower
-        # 1) Infrastructure -> Tower
-needs_seed = (
-    Tower.objects.count() == 0
-    or Tower.objects.filter(latitude__isnull=True).exists()
-    or Tower.objects.filter(longitude__isnull=True).exists()
-)
-
-if "Infrastructure" in xl.sheet_names and needs_seed:
-    df = xl.parse("Infrastructure")
-    df.columns = [str(c).strip() for c in df.columns]
-
-    centers_exact, centers_list = load_region_centers_from_csv()
-
-    updated = 0
-    created = 0
-
-    for _, r in df.iterrows():
-        region = safe_str(r.get("Region"))
-
-        lat = to_float(r.get("Latitude") or r.get("latitude") or r.get("LAT") or r.get("lat"))
-        lng = to_float(
-            r.get("Longitude")
-            or r.get("longitude")
-            or r.get("LNG")
-            or r.get("lng")
-            or r.get("Lon")
-            or r.get("lon")
-            or r.get("Long")
+        # =========================
+        needs_seed = (
+            Tower.objects.count() == 0
+            or Tower.objects.filter(latitude__isnull=True).exists()
+            or Tower.objects.filter(longitude__isnull=True).exists()
+            or Tower.objects.filter(latitude="").exists()
+            or Tower.objects.filter(longitude="").exists()
+            or Tower.objects.filter(latitude=0).exists()
+            or Tower.objects.filter(longitude=0).exists()
         )
 
-        if lat is None or lng is None:
-            base_lat, base_lng = pick_region_center(region, centers_exact, centers_list)
-            lat, lng = spread_coords(base_lat, base_lng)
+        if "Infrastructure" in xl.sheet_names and needs_seed:
+            df = xl.parse("Infrastructure")
+            df.columns = [str(c).strip() for c in df.columns]
 
-        tower_id = safe_str(r.get("Tower ID"))
-        defaults = {
-            "region": region,
-            "installation_date": to_date(r.get("Installation Date")),
-            "tower_type": safe_str(r.get("Tower Type")),
-            "technology": safe_str(r.get("Technology")),
-            "power_source": safe_str(r.get("Power Source")),
-            "operational_status": safe_str(r.get("Operational Status")),
-            "max_capacity_users": to_int(r.get("Max Capacity (Users)")),
-            "latitude": lat,
-            "longitude": lng,
-        }
+            updated = 0
+            created = 0
 
-        obj, was_created = Tower.objects.update_or_create(
-            tower_id=tower_id,
-            defaults=defaults
-        )
+            for _, r in df.iterrows():
+                region = safe_str(r.get("Region"))
 
-        if was_created:
-            created += 1
+                lat = to_float(
+                    r.get("Latitude") or r.get("latitude") or r.get("LAT") or r.get("lat")
+                )
+                lng = to_float(
+                    r.get("Longitude")
+                    or r.get("longitude")
+                    or r.get("LNG")
+                    or r.get("lng")
+                    or r.get("Lon")
+                    or r.get("lon")
+                    or r.get("Long")
+                )
+
+                if lat is None or lng is None:
+                    base_lat, base_lng = pick_region_center(region, centers_exact, centers_list)
+                    lat, lng = spread_coords(base_lat, base_lng)
+
+                tower_id = safe_str(r.get("Tower ID"))
+                if not tower_id:
+                    # skip rows without tower id
+                    continue
+
+                defaults = {
+                    "region": region,
+                    "installation_date": to_date(r.get("Installation Date")),
+                    "tower_type": safe_str(r.get("Tower Type")),
+                    "technology": safe_str(r.get("Technology")),
+                    "power_source": safe_str(r.get("Power Source")),
+                    "operational_status": safe_str(r.get("Operational Status")),
+                    "max_capacity_users": to_int(r.get("Max Capacity (Users)")),
+                    "latitude": lat,
+                    "longitude": lng,
+                }
+
+                obj, was_created = Tower.objects.update_or_create(
+                    tower_id=tower_id,
+                    defaults=defaults
+                )
+
+                if was_created:
+                    created += 1
+                else:
+                    updated += 1
+
+            self.stdout.write(self.style.SUCCESS(f"Towers created: {created}, updated: {updated}"))
         else:
-            updated += 1
+            self.stdout.write(self.style.WARNING("Skip towers (no need or sheet missing)."))
 
-    self.stdout.write(self.style.SUCCESS(f"Towers created: {created}, updated: {updated}"))
-else:
-    self.stdout.write(self.style.WARNING("Skip towers (no need or sheet missing)."))
-
-
+        # ==================================
         # 2) Customer_Complaints -> Complaint
-    if "Customer_Complaints" in xl.sheet_names and Complaint.objects.count() == 0:
+        # ==================================
+        if "Customer_Complaints" in xl.sheet_names and Complaint.objects.count() == 0:
             df = xl.parse("Customer_Complaints")
             df.columns = [str(c).strip() for c in df.columns]
 
@@ -266,11 +265,13 @@ else:
 
             Complaint.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
             self.stdout.write(self.style.SUCCESS(f"Seeded complaints: {len(objs)}"))
-    else:
+        else:
             self.stdout.write(self.style.WARNING("Skip complaints (already seeded or sheet missing)."))
 
-        # 3) User_Base_Usage -> DataUsage
-    if "User_Base_Usage" in xl.sheet_names and DataUsage.objects.count() == 0:
+        # ===========================
+        # 3) User_Base_Usage -> Usage
+        # ===========================
+        if "User_Base_Usage" in xl.sheet_names and DataUsage.objects.count() == 0:
             df = xl.parse("User_Base_Usage")
             df.columns = [str(c).strip() for c in df.columns]
 
@@ -291,11 +292,13 @@ else:
 
             DataUsage.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
             self.stdout.write(self.style.SUCCESS(f"Seeded usage: {len(objs)}"))
-    else:
+        else:
             self.stdout.write(self.style.WARNING("Skip usage (already seeded or sheet missing)."))
 
-        # 4) Geography_Climate -> GeoClimate
-    if "Geography_Climate" in xl.sheet_names and GeoClimate.objects.count() == 0:
+        # ===============================
+        # 4) Geography_Climate -> Climate
+        # ===============================
+        if "Geography_Climate" in xl.sheet_names and GeoClimate.objects.count() == 0:
             df = xl.parse("Geography_Climate")
             df.columns = [str(c).strip() for c in df.columns]
 
@@ -315,7 +318,7 @@ else:
 
             GeoClimate.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
             self.stdout.write(self.style.SUCCESS(f"Seeded climate: {len(objs)}"))
-    else:
+        else:
             self.stdout.write(self.style.WARNING("Skip climate (already seeded or sheet missing)."))
 
         self.stdout.write(self.style.SUCCESS("✅ Seed finished (safe mode)."))
