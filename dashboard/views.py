@@ -361,7 +361,7 @@ def tower_map_view(request):
         "mapped_towers": len(towers),  # 👈 هذا اللي نعرضه في الصفحة
     }
 
-    return render(request, "towers/tower_map.html", context)
+    return render(request, "dashboard/tower_map.html", context)
 
 
 # ─────────────────────────────
