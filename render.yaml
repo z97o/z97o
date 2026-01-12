@@ -6,12 +6,7 @@ services:
     region: singapore
     
     buildCommand: |
-      cd omantel
-      pip install --upgrade pip
-      pip install -r requirements.txt
-      python manage.py migrate
-      python manage.py collectstatic --noinput
-      python manage.py seed_from_excel --verbosity 2 || echo "Seed completed or skipped"
+      cd omantel && pip install --upgrade pip && pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput && (python manage.py seed_from_excel --verbosity 2 || echo "Seed completed or skipped")
 
     startCommand: cd omantel && python -m gunicorn omantel.wsgi:application --bind 0.0.0.0:$PORT
 
