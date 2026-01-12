@@ -36,6 +36,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 import random
 
+
 # Path to your NetInsight dataset
 DATA_FILE = Path(settings.BASE_DIR) / "data" / "NetInsight_Large_Detailed_Dataset.xlsx"
 
@@ -316,75 +317,51 @@ def _safe_float(x):
         return None
 
 
+
 @login_required
 def tower_map_view(request):
-    """
-    Tower map page (FROM DATABASE):
-    - Shows towers on Leaflet map
-    - Summary by operational_status
-    - JSON includes tower PK id for events
-    """
+    towers_all = Tower.objects.all()
 
-    # لا نعتمد فقط على exclude(null) لأن أحيانًا تكون القيم نصوص/فراغات
-    towers_qs = Tower.objects.all()
+    towers_qs = (
+        towers_all
+        .exclude(latitude__isnull=True)
+        .exclude(longitude__isnull=True)
+        .exclude(latitude="")
+        .exclude(longitude="")
+        .exclude(latitude=0)
+        .exclude(longitude=0)
+    )
 
     towers = []
-    active_count = 0
-    maintenance_count = 0
-    down_count = 0
-
     for t in towers_qs:
-        lat = _safe_float(t.latitude)
-        lng = _safe_float(t.longitude)
-
-        # تجاهل أي tower ما عنده coords صحيحة
-        if lat is None or lng is None:
+        try:
+            lat = float(t.latitude)
+            lon = float(t.longitude)
+        except Exception:
             continue
-
-        # تجاهل 0,0 (كثير تصير لما تكون البيانات ناقصة)
-        if lat == 0 or lng == 0:
-            continue
-
-        # تحقق من نطاق الإحداثيات (عشان ما يروح marker مكان بعيد)
-        if not (-90 <= lat <= 90 and -180 <= lng <= 180):
-            continue
-
-        status = (t.operational_status or "Unknown").strip()
-
-        # تحديث العدادات بعد التصفية الفعلية
-        if status.lower() == "active":
-            active_count += 1
-        elif status.lower() == "maintenance":
-            maintenance_count += 1
-        elif status.lower() == "down":
-            down_count += 1
 
         towers.append({
             "id": t.id,
             "tower_id": t.tower_id,
             "region": t.region,
             "lat": lat,
-
-            # ✨ أرسل الاثنين (lon و lng) عشان أي تمبلت/JS يشتغل
-            "lon": lng,
-            "lng": lng,
-
+            "lon": lon,
             "technology": t.technology or "-",
             "power_source": t.power_source or "-",
-            "status": status,
-            "capacity": int(t.max_capacity_users or 0),
+            "status": t.operational_status or "Down",
+            "capacity": int(t.capacity or 0),
         })
 
-    total_towers = len(towers)
-
     context = {
-        "towers_json": json.dumps(towers),
-        "total_towers": total_towers,
-        "active_count": active_count,
-        "maintenance_count": maintenance_count,
-        "down_count": down_count,
+        "towers_json": towers,
+        "total_towers": towers_all.count(),
+        "active_count": towers_qs.filter(operational_status__iexact="Active").count(),
+        "maintenance_count": towers_qs.filter(operational_status__iexact="Maintenance").count(),
+        "down_count": towers_qs.filter(operational_status__iexact="Down").count(),
+        "mapped_towers": len(towers),  # 👈 هذا اللي نعرضه في الصفحة
     }
-    return render(request, "dashboard/tower_map.html", context)
+
+    return render(request, "towers/tower_map.html", context)
 
 
 # ─────────────────────────────
