@@ -173,10 +173,11 @@ class Command(BaseCommand):
         # =========================
         needs_seed = (
             Tower.objects.count() == 0
-            or Tower.objects.filter(latitude__isnull=True).exists()
-            or Tower.objects.filter(longitude__isnull=True).exists()
-            or Tower.objects.filter(latitude=0).exists()
-            or Tower.objects.filter(longitude=0).exists()
+            Tower.objects.filter(latitude__isnull=True).exists()
+            Tower.objects.filter(longitude__isnull=True).exists()
+            Tower.objects.filter(latitude=0).exists()
+            Tower.objects.filter(longitude=0).exists()
+
         )
 
 
