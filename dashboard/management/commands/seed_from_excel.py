@@ -1,8 +1,10 @@
 from pathlib import Path
 import pandas as pd
 import random
+
 from django.core.management.base import BaseCommand
 from django.apps import apps
+
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 EXCEL_PATH = BASE_DIR / "data" / "NetInsight_Large_Detailed_Dataset.xlsx"
@@ -55,6 +57,24 @@ def to_date(x):
     return d.date() if pd.notna(d) else None
 
 
+def first_present(row, keys):
+    """
+    Return the first non-empty value from row for given keys.
+    IMPORTANT: doesn't treat 0 as empty.
+    """
+    for k in keys:
+        v = row.get(k)
+        if v is None:
+            continue
+        if isinstance(v, str) and v.strip() == "":
+            continue
+        if pd.isna(v):
+            continue
+        return v
+    return None
+
+
+# City -> Big region name in regions.csv
 CITY_TO_REGION_NAME = {
     "Seeb": "Muscat North",
     "Barka": "Muscat South",
@@ -63,6 +83,7 @@ CITY_TO_REGION_NAME = {
     "Sur": "Sharqiya",
 }
 
+# fallback centers (for cities not present in regions.csv)
 REGION_CENTERS_FALLBACK = {
     "Seeb": (23.6800, 58.1800),
     "Sohar": (24.3419, 56.7290),
@@ -83,6 +104,12 @@ def _norm_name(s: str) -> str:
 
 
 def load_region_centers_from_csv():
+    """
+    regions.csv columns: code, name, latitude, longitude
+    returns:
+      centers_exact: { "muscat north": (lat,lng), ... }
+      centers_list:  [("muscat north",(lat,lng)), ...]
+    """
     if not REGIONS_CSV_PATH.exists():
         return {}, []
 
@@ -102,6 +129,14 @@ def load_region_centers_from_csv():
 
 
 def pick_region_center(region_raw: str, centers_exact: dict, centers_list: list):
+    """
+    Strategy:
+    0) map city -> big region
+    1) exact match in CSV
+    2) substring match in CSV
+    3) fallback city centers
+    4) default Muscat
+    """
     mapped = CITY_TO_REGION_NAME.get(region_raw)
     if mapped:
         region_raw = mapped
@@ -124,6 +159,7 @@ def pick_region_center(region_raw: str, centers_exact: dict, centers_list: list)
 
 
 def spread_coords(center_lat, center_lng):
+    """small random spread so towers don't overlap exactly"""
     return (
         center_lat + random.uniform(-0.06, 0.06),
         center_lng + random.uniform(-0.06, 0.06),
@@ -140,8 +176,11 @@ class Command(BaseCommand):
 
         xl = pd.ExcelFile(EXCEL_PATH)
 
+        # load big-region centers from CSV
         centers_exact, centers_list = load_region_centers_from_csv()
-        self.stdout.write(self.style.SUCCESS(f"Region centers loaded from CSV: {len(centers_exact)}"))
+        self.stdout.write(
+            self.style.SUCCESS(f"Region centers loaded from CSV: {len(centers_exact)}")
+        )
 
         Tower = apps.get_model("dashboard", "Tower")
         Complaint = apps.get_model("dashboard", "Complaint")
@@ -169,23 +208,17 @@ class Command(BaseCommand):
             for _, r in df.iterrows():
                 region = safe_str(r.get("Region"))
 
-                lat = to_float(r.get("Latitude") or r.get("latitude") or r.get("LAT") or r.get("lat"))
-                lng = to_float(
-                    r.get("Longitude")
-                    or r.get("longitude")
-                    or r.get("LNG")
-                    or r.get("lng")
-                    or r.get("Lon")
-                    or r.get("Long")
-                )
+                lat_raw = first_present(r, ["Latitude", "latitude", "LAT", "lat"])
+                lng_raw = first_present(r, ["Longitude", "longitude", "LNG", "lng", "Lon", "lon", "Long"])
 
-                if lat is None or lng is None or lat == 0 or lng == 0:
+                lat = to_float(lat_raw)
+                lng = to_float(lng_raw)
+
+                if lat is None or lng is None:
                     base_lat, base_lng = pick_region_center(region, centers_exact, centers_list)
                     lat, lng = spread_coords(base_lat, base_lng)
 
                 tower_id = safe_str(r.get("Tower ID"))
-                if not tower_id:
-                    continue
 
                 defaults = {
                     "region": region,
@@ -243,9 +276,9 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.WARNING("Skip complaints (already seeded or sheet missing)."))
 
-        # ===========================
-        # 3) User_Base_Usage -> Usage
-        # ===========================
+        # ============================
+        # 3) User_Base_Usage -> DataUsage
+        # ============================
         if "User_Base_Usage" in xl.sheet_names and DataUsage.objects.count() == 0:
             df = xl.parse("User_Base_Usage")
             df.columns = [str(c).strip() for c in df.columns]
@@ -254,7 +287,6 @@ class Command(BaseCommand):
             objs = []
 
             for _, r in df.iterrows():
-                _toggle = to_float(r.get("Avg Data/User (GB/day)"))
                 data = {
                     "region": safe_str(r.get("Region")),
                     "residential_users": to_int(r.get("Residential Users")),
@@ -273,7 +305,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Skip usage (already seeded or sheet missing)."))
 
         # ===============================
-        # 4) Geography_Climate -> Climate
+        # 4) Geography_Climate -> GeoClimate
         # ===============================
         if "Geography_Climate" in xl.sheet_names and GeoClimate.objects.count() == 0:
             df = xl.parse("Geography_Climate")

@@ -78,25 +78,13 @@ WSGI_APPLICATION = "omantel.wsgi.application"
 # DATABASE
 # -----------------------------
 # Default: SQLite (easy for local dev)
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-
-if DATABASE_URL:
-    DATABASES = {
-        "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
+}
 
-    # ✅ sslmode فقط لو PostgreSQL
-    if DATABASES["default"].get("ENGINE") == "django.db.backends.postgresql":
-        DATABASES["default"].setdefault("OPTIONS", {})
-        DATABASES["default"]["OPTIONS"].setdefault("sslmode", "require")
-
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
 
 # -----------------------------
 # PASSWORD VALIDATION
