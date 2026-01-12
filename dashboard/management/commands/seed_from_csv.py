@@ -55,6 +55,7 @@ def to_date(x):
     return d.date() if pd.notna(d) else None
 
 
+# ✅ City -> Big region name in regions.csv
 CITY_TO_REGION_NAME = {
     "Seeb": "Muscat North",
     "Barka": "Muscat South",
@@ -63,6 +64,7 @@ CITY_TO_REGION_NAME = {
     "Sur": "Sharqiya",
 }
 
+# ✅ fallback centers (for cities not present in regions.csv)
 REGION_CENTERS_FALLBACK = {
     "Seeb": (23.6800, 58.1800),
     "Sohar": (24.3419, 56.7290),
@@ -83,6 +85,12 @@ def _norm_name(s: str) -> str:
 
 
 def load_region_centers_from_csv():
+    """
+    regions.csv columns: code, name, latitude, longitude
+    returns:
+      centers_exact: { "muscat north": (lat,lng), ... }
+      centers_list:  [("muscat north",(lat,lng)), ...]
+    """
     if not REGIONS_CSV_PATH.exists():
         return {}, []
 
@@ -102,6 +110,16 @@ def load_region_centers_from_csv():
 
 
 def pick_region_center(region_raw: str, centers_exact: dict, centers_list: list):
+    """
+    Pick center coordinates for a city/region string from Excel.
+
+    Strategy:
+    0) map city -> big region (Muscat North/South, Dhofar, Sharqiya)
+    1) exact match in CSV
+    2) substring match in CSV
+    3) fallback city centers
+    4) default Muscat
+    """
     mapped = CITY_TO_REGION_NAME.get(region_raw)
     if mapped:
         region_raw = mapped
@@ -110,20 +128,25 @@ def pick_region_center(region_raw: str, centers_exact: dict, centers_list: list)
     if not rnorm:
         return REGION_CENTERS_FALLBACK["Muscat"]
 
+    # 1) exact (CSV)
     if rnorm in centers_exact:
         return centers_exact[rnorm]
 
+    # 2) fuzzy substring (CSV)
     for name, coords in centers_list:
         if rnorm in name or name in rnorm:
             return coords
 
+    # 3) fallback by original city name (Excel)
     if region_raw in REGION_CENTERS_FALLBACK:
         return REGION_CENTERS_FALLBACK[region_raw]
 
+    # 4) default
     return REGION_CENTERS_FALLBACK.get(region_raw, REGION_CENTERS_FALLBACK["Muscat"])
 
 
 def spread_coords(center_lat, center_lng):
+    """small random spread so towers don't overlap exactly"""
     return (
         center_lat + random.uniform(-0.06, 0.06),
         center_lng + random.uniform(-0.06, 0.06),
@@ -140,6 +163,7 @@ class Command(BaseCommand):
 
         xl = pd.ExcelFile(EXCEL_PATH)
 
+        # ✅ load big-region centers from CSV
         centers_exact, centers_list = load_region_centers_from_csv()
         self.stdout.write(self.style.SUCCESS(f"Region centers loaded from CSV: {len(centers_exact)}"))
 
@@ -155,6 +179,8 @@ class Command(BaseCommand):
             Tower.objects.count() == 0
             or Tower.objects.filter(latitude__isnull=True).exists()
             or Tower.objects.filter(longitude__isnull=True).exists()
+            or Tower.objects.filter(latitude="").exists()
+            or Tower.objects.filter(longitude="").exists()
             or Tower.objects.filter(latitude=0).exists()
             or Tower.objects.filter(longitude=0).exists()
         )
@@ -176,6 +202,7 @@ class Command(BaseCommand):
                     or r.get("LNG")
                     or r.get("lng")
                     or r.get("Lon")
+                    or r.get("lon")
                     or r.get("Long")
                 )
 
@@ -199,7 +226,7 @@ class Command(BaseCommand):
                     "longitude": lng,
                 }
 
-                _, was_created = Tower.objects.update_or_create(
+                obj, was_created = Tower.objects.update_or_create(
                     tower_id=tower_id,
                     defaults=defaults
                 )
@@ -211,7 +238,7 @@ class Command(BaseCommand):
 
             self.stdout.write(self.style.SUCCESS(f"Towers created: {created}, updated: {updated}"))
         else:
-            self.stdout.write(self.style.WARNING("Skip towers (already seeded or sheet missing)."))
+            self.stdout.write(self.style.WARNING("Skip towers (no need or sheet missing)."))
 
         # ==================================
         # 2) Customer_Complaints -> Complaint
@@ -254,7 +281,6 @@ class Command(BaseCommand):
             objs = []
 
             for _, r in df.iterrows():
-                _toggle = to_float(r.get("Avg Data/User (GB/day)"))
                 data = {
                     "region": safe_str(r.get("Region")),
                     "residential_users": to_int(r.get("Residential Users")),
