@@ -350,7 +350,7 @@
       form.append("tower_id", towerId);
       form.append("status", status);
 
-      const res = await fetch("{% url 'tower_event_create' %}", {
+    const res = await fetch("/tower-events/create/", {
         method: "POST",
         headers: {"X-CSRFToken": csrftoken},
         body: form
