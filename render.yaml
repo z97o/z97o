@@ -4,6 +4,7 @@ services:
     env: python
     plan: free
     region: singapore
+    rootDir: omantel
     
     buildCommand: |
       pip install --upgrade pip
