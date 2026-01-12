@@ -266,11 +266,11 @@ else:
 
             Complaint.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
             self.stdout.write(self.style.SUCCESS(f"Seeded complaints: {len(objs)}"))
-        else:
+    else:
             self.stdout.write(self.style.WARNING("Skip complaints (already seeded or sheet missing)."))
 
         # 3) User_Base_Usage -> DataUsage
-        if "User_Base_Usage" in xl.sheet_names and DataUsage.objects.count() == 0:
+    if "User_Base_Usage" in xl.sheet_names and DataUsage.objects.count() == 0:
             df = xl.parse("User_Base_Usage")
             df.columns = [str(c).strip() for c in df.columns]
 
@@ -291,11 +291,11 @@ else:
 
             DataUsage.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
             self.stdout.write(self.style.SUCCESS(f"Seeded usage: {len(objs)}"))
-        else:
+    else:
             self.stdout.write(self.style.WARNING("Skip usage (already seeded or sheet missing)."))
 
         # 4) Geography_Climate -> GeoClimate
-        if "Geography_Climate" in xl.sheet_names and GeoClimate.objects.count() == 0:
+    if "Geography_Climate" in xl.sheet_names and GeoClimate.objects.count() == 0:
             df = xl.parse("Geography_Climate")
             df.columns = [str(c).strip() for c in df.columns]
 
@@ -315,7 +315,7 @@ else:
 
             GeoClimate.objects.bulk_create(objs, batch_size=500, ignore_conflicts=True)
             self.stdout.write(self.style.SUCCESS(f"Seeded climate: {len(objs)}"))
-        else:
+    else:
             self.stdout.write(self.style.WARNING("Skip climate (already seeded or sheet missing)."))
 
         self.stdout.write(self.style.SUCCESS("✅ Seed finished (safe mode)."))
