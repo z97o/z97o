@@ -299,68 +299,53 @@ def region_insights_view(request):
 # ─────────────────────────────
 # TOWER MAP VIEW
 # ─────────────────────────────
-def _safe_float(x):
-    """
-    يحول أي قيمة لرقم float بأمان:
-    - يتعامل مع None / فراغ
-    - يتعامل مع "23,588" أو "23.588" أو "23،588"
-    """
-    if x is None:
-        return None
-    s = str(x).strip()
-    if s == "":
-        return None
-    s = s.replace("،", ".").replace(",", ".")
+def safe_float(v):
     try:
-        return float(s)
+        if v is None:
+            return None
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return float(v)
     except Exception:
         return None
 
-
-
 @login_required
 def tower_map_view(request):
-    towers_all = Tower.objects.all()
+    towers_qs = Tower.objects.all()
 
-    towers_qs = (
-        towers_all
-        .exclude(latitude__isnull=True)
-        .exclude(longitude__isnull=True)
-        .exclude(latitude="")
-        .exclude(longitude="")
-        .exclude(latitude=0)
-        .exclude(longitude=0)
-    )
+    total_towers = towers_qs.count()
+    active_count = towers_qs.filter(operational_status__iexact="Active").count()
+    maintenance_count = towers_qs.filter(operational_status__iexact="Maintenance").count()
+    down_count = towers_qs.filter(operational_status__iexact="Down").count()
 
     towers = []
     for t in towers_qs:
-        try:
-            lat = float(t.latitude)
-            lon = float(t.longitude)
-        except Exception:
+        lat = safe_float(getattr(t, "latitude", None))
+        lon = safe_float(getattr(t, "longitude", None))
+
+        # ✅ لا نرسل أي برج بدون إحداثيات صحيحة
+        if lat is None or lon is None or lat == 0 or lon == 0:
             continue
 
         towers.append({
             "id": t.id,
             "tower_id": t.tower_id,
-            "region": t.region,
+            "region": t.region or "-",
             "lat": lat,
             "lon": lon,
             "technology": t.technology or "-",
             "power_source": t.power_source or "-",
-            "status": t.operational_status or "Down",
-            "capacity": int(t.capacity or 0),
+            "status": t.operational_status or "-",
+            "capacity": int(t.max_capacity_users or 0),
         })
 
     context = {
-        "towers_json": towers,
-        "total_towers": towers_all.count(),
-        "active_count": towers_qs.filter(operational_status__iexact="Active").count(),
-        "maintenance_count": towers_qs.filter(operational_status__iexact="Maintenance").count(),
-        "down_count": towers_qs.filter(operational_status__iexact="Down").count(),
-        "mapped_towers": len(towers),  # 👈 هذا اللي نعرضه في الصفحة
+        "total_towers": total_towers,
+        "active_count": active_count,
+        "maintenance_count": maintenance_count,
+        "down_count": down_count,
+        "towers_json": towers,  # سنرسلها كـ object لـ json_script
     }
-
     return render(request, "dashboard/tower_map.html", context)
 
 

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        cd omantel
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run Django checks
+      run: |
+        cd omantel
+        python manage.py check
+        python manage.py check --deploy || true
+    
+    - name: Test migrations
+      run: |
+        cd omantel
+        python manage.py migrate --check

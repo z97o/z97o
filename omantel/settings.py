@@ -15,11 +15,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # -----------------------------
 # SECURITY
 # -----------------------------
-SECRET_KEY = "django-insecure-CHANGE_THIS_TO_YOUR_SECRET_KEY"
-DEBUG = False
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-CHANGE_THIS_TO_YOUR_SECRET_KEY")
+DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
 # Hosts allowed to access the app
-ALLOWED_HOSTS = [".onrender.com"]
+# Allow all hosts for public access (you can restrict this to specific domains)
+ALLOWED_HOSTS_ENV = os.environ.get("ALLOWED_HOSTS", "*")
+if ALLOWED_HOSTS_ENV == "*":
+    ALLOWED_HOSTS = ["*"]  # For public access - accepts all hosts
+else:
+    ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(",")]
+# For production, you should specify your domain instead:
+# ALLOWED_HOSTS = ["your-domain.com", "www.your-domain.com", "your-ip-address"]
 
 # -----------------------------
 # INSTALLED APPS

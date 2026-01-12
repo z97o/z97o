@@ -7,10 +7,15 @@
 <p style="margin-top:0;color:#666;">
   Overview of Omantel towers across Oman with operational status, technology, and capacity.
 </p>
+
+<!-- ✅ Debug line (from Django context) -->
 <p style="color:#b00020;font-size:12px;margin:6px 0;">
   Debug: Total Towers (DB) = {{ total_towers }} |
-  Towers with coordinates = {{ mapped_towers }}
+  Towers with coordinates (sent to map) = {{ mapped_towers }}
 </p>
+
+<!-- ✅ In-page debug box -->
+<div id="debugBox" style="display:none;background:#fff3cd;border:1px solid #ffeeba;color:#856404;padding:10px;border-radius:10px;margin:10px 0;font-size:13px;"></div>
 
 <div style="margin-top: 18px; display: grid; grid-template-columns: 3fr 1.2fr; gap: 24px; align-items:start;"
      class="tower-map-grid">
@@ -134,7 +139,37 @@
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <script>
-  const towers = JSON.parse(document.getElementById("towers-data").textContent);
+  // ✅ read towers safely
+  const debugBox = document.getElementById("debugBox");
+  const dataEl = document.getElementById("towers-data");
+
+  if (!dataEl) {
+    debugBox.style.display = "block";
+    debugBox.textContent = "❌ towers-data element not found. towers_json is not being passed from the view.";
+    throw new Error("towers-data not found");
+  }
+
+  let towers = [];
+  try {
+    towers = JSON.parse(dataEl.textContent || "[]");
+  } catch (e) {
+    debugBox.style.display = "block";
+    debugBox.textContent = "❌ towers_json is not valid JSON. Check the view context (use json_script as done).";
+    console.error(e);
+    towers = [];
+  }
+
+  console.log("TOWERS COUNT (JS):", towers.length);
+
+  if (towers.length === 0) {
+    debugBox.style.display = "block";
+    debugBox.innerHTML = `
+      ⚠️ No towers received by the map.<br>
+      - Check your view is sending <code>towers_json</code><br>
+      - Check your view filters aren't removing all towers (lat/lon missing).<br>
+      - Your debug line above should show mapped_towers > 0.
+    `;
+  }
 
   const map = L.map('towerMap').setView([21.5, 57.0], 6);
 
@@ -170,6 +205,8 @@
     }
   });
 
+  map.addLayer(clusterGroup);
+
   // Heat layer (rebuilt as filters change)
   let heatLayer = null;
 
@@ -198,7 +235,11 @@
 
   // Create markers once
   const markers = [];
+  const bounds = [];
+
   towers.forEach(t => {
+    if (t.lat == null || t.lon == null) return;
+
     const color = statusColor(t.status);
 
     const marker = L.circleMarker([t.lat, t.lon], {
@@ -219,7 +260,6 @@
         <div style="font-size:14px;font-weight:800;margin-bottom:6px;">
           ${t.tower_id || "-"}
         </div>
-
         <div style="font-size:13px;line-height:1.55;color:#333;">
           <div><strong>Region:</strong> ${t.region || "-"}</div>
           <div><strong>Technology:</strong> ${t.technology || "-"}</div>
@@ -227,16 +267,13 @@
           <div><strong>Status:</strong> ${t.status || "-"}</div>
           <div><strong>Capacity:</strong> ${capText} users</div>
         </div>
-
         <hr style="margin:10px 0;border:none;border-top:1px solid #eee;">
-
         <div style="display:flex;gap:8px;">
           <button type="button"
             onclick="sendTowerEvent(${t.id}, 'down')"
             style="flex:1;padding:8px 10px;border-radius:10px;border:none;background:#d32f2f;color:#fff;cursor:pointer;font-size:12px;">
             Trigger DOWN
           </button>
-
           <button type="button"
             onclick="sendTowerEvent(${t.id}, 'up')"
             style="flex:1;padding:8px 10px;border-radius:10px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:12px;">
@@ -248,10 +285,13 @@
 
     marker.bindPopup(popupHtml);
     markers.push(marker);
+    bounds.push([t.lat, t.lon]);
   });
 
-  // Add group to map
-  map.addLayer(clusterGroup);
+  // ✅ Fit map to points (if any)
+  if (bounds.length > 0) {
+    map.fitBounds(bounds, { padding: [30, 30] });
+  }
 
   // Elements
   const techFilter  = document.getElementById('techFilter');
@@ -303,8 +343,6 @@
 
     // markers
     clusterGroup.clearLayers();
-
-    // أسرع من some داخل loop: نحول IDs إلى Set
     const allowedIds = new Set(filtered.map(x => x.id));
     markers.forEach(m => {
       if (allowedIds.has(m.towerData.id)) clusterGroup.addLayer(m);
@@ -317,6 +355,10 @@
     } else {
       if (heatLayer && map.hasLayer(heatLayer)) map.removeLayer(heatLayer);
     }
+
+    // ✅ if filtered has points, fit bounds
+    const fb = filtered.filter(x => x.lat != null && x.lon != null).map(x => [x.lat, x.lon]);
+    if (fb.length > 0) map.fitBounds(fb, { padding: [30, 30] });
   }
 
   function resetFilters() {
@@ -350,7 +392,7 @@
       form.append("tower_id", towerId);
       form.append("status", status);
 
-    const res = await fetch("/tower-events/create/", {
+      const res = await fetch("/tower-events/create/", {
         method: "POST",
         headers: {"X-CSRFToken": csrftoken},
         body: form

@@ -1,0 +1,20 @@
+الأوامر المطلوبة لرفع الملفات إلى GitHub:
+
+1. cd C:\Users\z97o\Desktop\project\omantel
+
+2. git init
+
+3. git add .
+
+4. git commit -m "Initial commit: Omantel NetInsight project"
+
+5. git remote add origin https://github.com/z97o/z97o.git
+
+6. git branch -M main
+
+7. git push -u origin main
+
+ملاحظات:
+- عند git push، سيُطلب منك:
+  * اسم المستخدم: z97o
+  * كلمة المرور: Personal Access Token (من https://github.com/settings/tokens)
