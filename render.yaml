@@ -3,25 +3,25 @@ services:
     name: omantel-netinsight
     env: python
     plan: free
-
+    region: singapore
+    
     buildCommand: |
+      pip install --upgrade pip
       pip install -r requirements.txt
       python manage.py migrate
+      python manage.py collectstatic --noinput
 
-    startCommand: >
-    bash -lc "
-    echo '=== START COMMAND RUNNING ===';
-    pwd;
-    ls -la;
-    echo '=== LIST data/ ===';
-    ls -la data || true;
-    echo '=== RUN SEED ===';
-    python manage.py seed_from_excel --verbosity 2;
-    echo '=== SEED DONE ===';
-    gunicorn omantel.wsgi:application
-    "
-
+    startCommand: gunicorn omantel.wsgi:application
 
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.0
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        fromService:
+          type: web
+          name: omantel-netinsight
+          property: host
